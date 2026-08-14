@@ -1,0 +1,2 @@
+# emergencias
+Gestor emergencias
