@@ -18,16 +18,12 @@ h1{font-size:19px;margin:0}p{color:#64748b;font-size:13px;line-height:1.5}
 <script>
 (async()=>{
  const archivos=[
-  'app/v20260814/parte01.txt',
-  'app/v20260814/parte02.txt',
-  'app/v20260814/parte03.txt',
-  'app/v20260814/parte04.txt',
-  'app/v20260814/parte05.txt',
-  'app/v20260814/parte06a.txt',
-  'app/v20260814/parte06b1.txt',
-  'app/v20260814/parte06b2.txt',
-  'app/v20260814/parte06b3.txt',
-  'app/v20260814/parte06b4.txt'
+  'app/v20260815/parte01.txt',
+  'app/v20260815/parte02.txt',
+  'app/v20260815/parte03.txt',
+  'app/v20260815/parte04.txt',
+  'app/v20260815/parte05.txt',
+  'app/v20260815/parte06.txt'
  ];
  const partes=await Promise.all(archivos.map(async u=>{
    const r=await fetch(u,{cache:'no-store'});
@@ -39,9 +35,7 @@ h1{font-size:19px;margin:0}p{color:#64748b;font-size:13px;line-height:1.5}
  const bytes=Uint8Array.from(bin,c=>c.charCodeAt(0));
  if(typeof DecompressionStream!=='function') throw new Error('Actualiza el navegador para abrir la aplicación.');
  const html=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
- const logo='https://drive.google.com/thumbnail?id=1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s&sz=w800';
- const finalHtml=html.replaceAll('logo-movida-sst-plus.webp',logo);
- document.open();document.write(finalHtml);document.close();
+ document.open();document.write(html);document.close();
 })().catch(err=>{
  console.error(err);
  document.getElementById('msg').textContent='No se pudo cargar la aplicación. Recarga la página. '+(err?.message||'');
