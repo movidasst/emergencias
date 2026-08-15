@@ -3,7 +3,7 @@ name: Revision integral emergencias
 on:
   push:
     paths:
-      - 'tools/revision_integral_20260815.py'
+      - 'tools/revision_integral_r3.py'
       - '.github/workflows/revision-integral.yml'
   workflow_dispatch:
 
@@ -29,15 +29,18 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Aplicar revisión integral
-        run: python tools/revision_integral_20260815.py
+      - name: Aplicar revisión integral R3
+        run: python tools/revision_integral_r3.py
 
       - name: Verificar cambios
         run: |
           git diff --check
-          grep -q 'versión 2026.08.15-r1' index.html
+          grep -q 'versión 2026.08.15-r3' index.html
           grep -q 'property="og:title"' index.html
-          grep -q 'Cómo trabajar este paso y criterio técnico' index.html
+          grep -q 'Cómo evaluar vulnerabilidad' index.html
+          grep -q 'Descripción de la brecha' index.html
+          grep -q 'sfInfra' index.html
+          grep -q 'sfEnv' index.html
 
       - name: Publicar index revisado
         run: |
@@ -47,6 +50,6 @@ jobs:
           if git diff --cached --quiet; then
             echo 'Sin cambios pendientes.'
           else
-            git commit -m 'Revisión integral: flujo, metodología y previsualización social'
+            git commit -m 'Revisión integral R3: flujo, metodología y previsualización social'
             git push
           fi
