@@ -1,0 +1,52 @@
+name: Revision integral emergencias
+
+on:
+  push:
+    paths:
+      - 'tools/revision_integral_20260815.py'
+      - '.github/workflows/revision-integral.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  revisar-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Configurar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Aplicar revisión integral
+        run: python tools/revision_integral_20260815.py
+
+      - name: Verificar cambios
+        run: |
+          git diff --check
+          grep -q 'versión 2026.08.15-r1' index.html
+          grep -q 'property="og:title"' index.html
+          grep -q 'Cómo trabajar este paso y criterio técnico' index.html
+
+      - name: Publicar index revisado
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          if git diff --cached --quiet; then
+            echo 'Sin cambios pendientes.'
+          else
+            git commit -m 'Revisión integral: flujo, metodología y previsualización social'
+            git push
+          fi
