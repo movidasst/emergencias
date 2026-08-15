@@ -39,6 +39,17 @@ h1{font-size:19px;margin:0}p{color:#64748b;font-size:13px;line-height:1.5}
  const bloqueRoto=/  function projectVulnerabilityRows\(p=getLocalProject\(\)\)\{[\s\S]*?  function routeClass/;
  if(!bloqueRoto.test(html)) throw new Error('No se encontró el bloque técnico que debía corregirse.');
  html=html.replace(bloqueRoto,flujoCorregido);
+
+ const enlaceBase='    if($(\"goScenariosBtn\")) $(\"goScenariosBtn\").onclick=()=>navigateWorkflow(\"scenarios\");';
+ if(html.includes(enlaceBase)){
+   html=html.replace(enlaceBase,`    if($(\"saveVulnerabilityAndContinueBtn\")) $(\"saveVulnerabilityAndContinueBtn\").onclick=saveAllVulnerabilityAndContinue;
+    if($(\"backToHazardsBtn\")) $(\"backToHazardsBtn\").onclick=()=>showPage(\"hazards\");
+    if($(\"backToVulnerabilityBtn\")) $(\"backToVulnerabilityBtn\").onclick=()=>showPage(\"vulnerability\");
+    if($(\"vulnHazardSelect\")) $(\"vulnHazardSelect\").onchange=async()=>{await loadVulnerabilityInstrument();};
+    if($(\"vulnAreaSelect\")) $(\"vulnAreaSelect\").onchange=async()=>{await loadVulnerabilityInstrument();};
+    if($(\"goScenariosBtn\")) $(\"goScenariosBtn\").onclick=()=>navigateWorkflow(\"scenarios\");`);
+ }
+ html=html.replaceAll('Evalúa cada amenaza frente al área expuesta y documenta evidencia.','Evalúa cada amenaza frente al área expuesta y justifica la valoración.');
  document.open();document.write(html);document.close();
 })().catch(err=>{
  console.error(err);
