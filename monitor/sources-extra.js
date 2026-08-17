@@ -1,7 +1,6 @@
-/* Integraciones adicionales de fuentes públicas. Se carga después de app.js y environment-ui.js. */
+/* Fuentes adicionales y carga de inteligencia SST contextual. */
 (() => {
-  const FIRMS_API='https://lfdmbkzghnwvsapxypvt.supabase.co/functions/v1/nasa-firms-sst';
-  const originalLoadFeed=loadFeed;
+  const API='https://lfdmbkzghnwvsapxypvt.supabase.co/functions/v1/world-monitor-sst';
 
   function installSourceStyles(){
     if(document.querySelector('#source-status-styles'))return;
@@ -28,50 +27,45 @@
   }
 
   function installAdditionalSources(){
-    addSourceCard({id:'firms',icon:'🔥',name:'NASA FIRMS',subtitle:'Fuego activo y anomalías térmicas',text:'Detecciones satelitales VIIRS NOAA-20 y NOAA-21 sobre Venezuela. Una detección térmica requiere contextualización antes de asumir impacto ocupacional.',url:'https://firms.modaps.eosdis.nasa.gov/',status:'Verificando conexión…',statusClass:'ready',className:'firms'});
-    addSourceCard({id:'gdacs',icon:'🚨',name:'GDACS',subtitle:'Alertas globales de desastres',text:'ONU + Comisión Europea. Aporta alertas y contexto para terremotos, ciclones, inundaciones y otros eventos de interés internacional.',url:'https://www.gdacs.org/',status:'Fuente pública · integración siguiente'});
-    addSourceCard({id:'nhc',icon:'🌀',name:'NOAA / NHC',subtitle:'Ciclones tropicales',text:'Trayectorias, avisos y productos oficiales para ciclones del Atlántico y Caribe, relevantes para vigilancia regional de Venezuela.',url:'https://www.nhc.noaa.gov/',status:'Fuente pública · integración siguiente'});
-    addSourceCard({id:'glofas',icon:'🌊',name:'Copernicus GloFAS / GFM',subtitle:'Inundaciones',text:'Pronóstico y monitoreo global de inundaciones para complementar eventos reportados con contexto hidrológico y territorial.',url:'https://global-flood.emergency.copernicus.eu/',status:'Fuente pública · integración siguiente'});
-    addSourceCard({id:'tsunami',icon:'🌊',name:'NOAA Tsunami',subtitle:'Tsunami',text:'Mensajes y avisos estructurados para vigilancia de amenazas de tsunami, incluido el Caribe.',url:'https://www.tsunami.gov/',status:'Fuente pública · integración siguiente'});
-    addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Alertas geomagnéticas y solares útiles como contexto para GPS, comunicaciones y continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Fuente pública · integración siguiente'});
-    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Mediciones de estaciones y sensores para contrastar, cuando exista cobertura, los modelos ambientales de Open-Meteo/CAMS.',url:'https://openaq.org/',status:'Requiere API key gratuita',statusClass:'key'});
-    addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Infraestructura expuesta',text:'Hospitales, bomberos, centros de salud, carreteras y otros elementos territoriales que pueden cruzarse con una señal de amenaza.',url:'https://www.openstreetmap.org/',status:'Disponible · ya usado en el ecosistema',statusClass:'active'});
-    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para complementar la lectura situacional.',url:'https://reliefweb.int/',status:'Requiere appname aprobado',statusClass:'key'});
-    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Indicadores humanitarios',text:'Datos estandarizados de población, infraestructura y otros indicadores para enriquecer la exposición territorial.',url:'https://data.humdata.org/hapi',status:'Requiere app identifier gratuito',statusClass:'key'});
+    addSourceCard({id:'firms',icon:'🔥',name:'NASA FIRMS',subtitle:'Fuego activo y anomalías térmicas',text:'Detecciones satelitales VIIRS NOAA-20, NOAA-21 y Suomi-NPP. La aplicación interpreta FRP, confianza, ubicación y contexto SST sin asumir daño confirmado.',url:'https://firms.modaps.eosdis.nasa.gov/',status:'Verificando conexión…',statusClass:'ready',className:'firms'});
+    addSourceCard({id:'gdacs',icon:'🚨',name:'GDACS',subtitle:'Alertas globales de desastres',text:'ONU + Comisión Europea. Alertas y contexto de terremotos, ciclones, inundaciones y otros eventos internacionales.',url:'https://www.gdacs.org/',status:'Fuente pública · próxima integración'});
+    addSourceCard({id:'nhc',icon:'🌀',name:'NOAA / NHC',subtitle:'Ciclones tropicales',text:'Trayectorias, avisos y productos oficiales para ciclones del Atlántico y Caribe relevantes para Venezuela.',url:'https://www.nhc.noaa.gov/',status:'Fuente pública · próxima integración'});
+    addSourceCard({id:'glofas',icon:'🌊',name:'Copernicus GloFAS / GFM',subtitle:'Inundaciones',text:'Pronóstico y monitoreo global de inundaciones para complementar eventos con contexto hidrológico y territorial.',url:'https://global-flood.emergency.copernicus.eu/',status:'Fuente pública · próxima integración'});
+    addSourceCard({id:'tsunami',icon:'🌊',name:'NOAA Tsunami',subtitle:'Tsunami',text:'Mensajes y avisos estructurados para vigilancia de amenazas de tsunami, incluido el Caribe.',url:'https://www.tsunami.gov/',status:'Fuente pública · próxima integración'});
+    addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Alertas geomagnéticas y solares como contexto para GPS, comunicaciones y continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Fuente pública · próxima integración'});
+    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Mediciones de estaciones y sensores para contrastar los modelos ambientales cuando exista cobertura.',url:'https://openaq.org/',status:'Requiere API key gratuita',statusClass:'key'});
+    addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Infraestructura expuesta',text:'Hospitales, bomberos, carreteras, instalaciones y otros elementos territoriales para cruzar con amenazas.',url:'https://www.openstreetmap.org/',status:'Disponible · usado en el ecosistema',statusClass:'active'});
+    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para enriquecer la lectura situacional.',url:'https://reliefweb.int/',status:'Requiere appname aprobado',statusClass:'key'});
+    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Indicadores humanitarios',text:'Datos estandarizados de población, infraestructura y otros indicadores para enriquecer exposición territorial.',url:'https://data.humdata.org/hapi',status:'Requiere app identifier gratuito',statusClass:'key'});
   }
 
   async function updateFirmsStatus(){
     const badge=document.querySelector('[data-source-id="firms"] .source-status');
     if(!badge)return;
     try{
-      const r=await fetch(`${FIRMS_API}?health=1`,{headers:{Accept:'application/json'}});
+      const r=await fetch(`${API}?feed=health`,{headers:{Accept:'application/json'}});
       const p=await r.json().catch(()=>({}));
-      if(r.ok&&p.configured){badge.textContent='Activo · VIIRS NOAA-20/21';badge.className='source-status active'}
-      else {badge.textContent='MAP KEY no configurada';badge.className='source-status key'}
-    }catch{badge.textContent='Estado no disponible';badge.className='source-status error'}
+      if(r.ok&&p.nasa_firms_map_key_configured){
+        badge.textContent='Activo · VIIRS NOAA-20/21/Suomi-NPP'; badge.className='source-status active';
+      }else{
+        badge.textContent='Revisar MAP KEY / despliegue'; badge.className='source-status key';
+      }
+    }catch{
+      badge.textContent='Estado temporalmente no disponible'; badge.className='source-status error';
+    }
   }
 
-  async function enrichNaturalWithFirms(){
-    if(activeFeed!=='natural')return;
-    try{
-      const r=await fetch(FIRMS_API,{headers:{Accept:'application/json'}});
-      const p=await r.json().catch(()=>({}));
-      if(!r.ok||!Array.isArray(p.data))return;
-      const firms=p.data.map((item,i)=>normalize(item,`firms-${i}`));
-      const byId=new Map(rawItems.map(x=>[x.id,x]));
-      firms.forEach(x=>byId.set(x.id,x));
-      rawItems=[...byId.values()];
-      render();
-    }catch(e){console.warn('NASA FIRMS no disponible; se mantienen las demás fuentes naturales.',e)}
+  function loadIntelligenceLayer(){
+    if(!document.querySelector('link[href="./sst-intelligence.css"]')){
+      const link=document.createElement('link'); link.rel='stylesheet'; link.href='./sst-intelligence.css'; document.head.appendChild(link);
+    }
+    if(!document.querySelector('script[src="./sst-intelligence.js"]')){
+      const script=document.createElement('script'); script.src='./sst-intelligence.js'; script.defer=false; document.body.appendChild(script);
+    }
   }
-
-  loadFeed=async function(feed=activeFeed){
-    await originalLoadFeed(feed);
-    if(activeFeed==='natural')await enrichNaturalWithFirms();
-  };
 
   installSourceStyles();
   installAdditionalSources();
   updateFirmsStatus();
-  setTimeout(()=>loadFeed(activeFeed),0);
+  loadIntelligenceLayer();
 })();
