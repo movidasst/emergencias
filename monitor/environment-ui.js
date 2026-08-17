@@ -79,6 +79,85 @@
     if(actions)root.insertBefore(block,actions);else root.appendChild(block);
   };
 
+  function installImpactCounterExplanation(){
+    const subtitle=document.querySelector('.impact-subtitle');
+    if(!subtitle||document.querySelector('.impact-counter-note'))return;
+    const note=document.createElement('div');
+    note.className='impact-counter-note';
+    note.innerHTML='<b>¿Qué significan estos números?</b><p>Cuentan <strong>señales activas asociadas a cada ámbito</strong> según la capa, cobertura y filtros seleccionados. Por ejemplo, “17 señales · Trabajadores” significa 17 señales que justifican verificar una posible exposición de trabajadores; <strong>no significa 17 trabajadores afectados</strong>.</p>';
+    subtitle.insertAdjacentElement('afterend',note);
+  }
+
+  function clarifyImpactDomains(){
+    const wrap=document.querySelector('#impactDomains');
+    if(!wrap)return;
+    wrap.querySelectorAll('article').forEach(card=>{
+      if(card.dataset.semanticReady==='1')return;
+      const value=card.querySelector('b');
+      const labelEl=card.querySelector('small');
+      if(!value||!labelEl)return;
+      const count=parseInt(value.textContent,10);
+      const label=labelEl.textContent.trim();
+      if(!Number.isFinite(count))return;
+      value.innerHTML=`${count}<em> señales</em>`;
+      labelEl.textContent=label;
+      card.title=`${count} señales activas asociadas al ámbito ${label}. No representa un conteo de personas, instalaciones o activos realmente afectados.`;
+      card.setAttribute('aria-label',`${label}: ${count} señales activas asociadas. No es un conteo de personas o activos afectados.`);
+      card.dataset.semanticReady='1';
+    });
+  }
+
+  function installSourcesSection(){
+    if(document.querySelector('#dataSources'))return;
+    const anchor=document.querySelector('.disclaimer-card');
+    if(!anchor)return;
+    const section=document.createElement('section');
+    section.className='sources-card';
+    section.id='dataSources';
+    section.innerHTML=`
+      <div class="sources-head">
+        <div>
+          <p class="eyebrow">TRAZABILIDAD DEL DATO</p>
+          <h3>¿De dónde sale la información?</h3>
+          <p>El monitor no inventa eventos ni “cuenta afectados”. Consulta fuentes externas, normaliza las señales y luego aplica una lectura preventiva SST para ayudar a decidir qué verificar primero.</p>
+        </div>
+        <span class="sources-badge">Datos abiertos + APIs</span>
+      </div>
+
+      <div class="data-method">
+        <article><span>1</span><div><b>Fuente</b><p>Se recibe un evento, observación o condición desde el proveedor indicado.</p></div></article>
+        <article><span>2</span><div><b>Contexto</b><p>Se revisan ubicación, severidad, tipo de señal y proximidad a Venezuela.</p></div></article>
+        <article><span>3</span><div><b>Lectura SST</b><p>Se identifican ámbitos que conviene verificar: trabajadores, sedes, movilidad, servicios, comunicaciones y continuidad.</p></div></article>
+      </div>
+
+      <div class="sources-grid">
+        <a href="https://eonet.gsfc.nasa.gov/docs/v3" target="_blank" rel="noopener" class="source-card">
+          <span class="source-icon">🛰️</span><div><b>NASA EONET</b><small>Eventos naturales</small><p>Metadatos de eventos abiertos como incendios, tormentas severas, volcanes e inundaciones, con ubicación y fuentes asociadas.</p></div>
+        </a>
+        <a href="https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php" target="_blank" rel="noopener" class="source-card">
+          <span class="source-icon">🌎</span><div><b>USGS</b><small>Sismos</small><p>Feed GeoJSON de terremotos. El monitor usa el feed M4.5+ del último día como señal sísmica de referencia.</p></div>
+        </a>
+        <a href="https://api.ioda.inetintel.cc.gatech.edu/v2/" target="_blank" rel="noopener" class="source-card">
+          <span class="source-icon">🌐</span><div><b>IODA · Georgia Tech</b><small>Conectividad</small><p>Eventos y alertas de interrupciones de Internet construidos a partir de señales de conectividad y enrutamiento.</p></div>
+        </a>
+        <a href="https://simplemap.safecast.org/docs/index.html" target="_blank" rel="noopener" class="source-card">
+          <span class="source-icon">☢️</span><div><b>Safecast</b><small>Radiación ionizante</small><p>Red abierta de mediciones y sensores de radiación. Una observación no equivale por sí sola a exposición ocupacional confirmada.</p></div>
+        </a>
+        <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener" class="source-card">
+          <span class="source-icon">☀️</span><div><b>Open-Meteo / CAMS</b><small>Exposición ambiental</small><p>UV, AQI, PM2.5, PM10, ozono, polvo y variables meteorológicas. Son datos/modelos ambientales, no mediciones higiénicas dentro del puesto de trabajo.</p></div>
+        </a>
+        <a href="https://worldmonitor.app/" target="_blank" rel="noopener" class="source-card optional">
+          <span class="source-icon">📡</span><div><b>World Monitor</b><small>Enriquecimiento opcional</small><p>Cuando está disponible puede enriquecer determinadas capas. El sistema mantiene fuentes públicas directas como respaldo independiente.</p></div>
+        </a>
+      </div>
+
+      <div class="sources-clarification">
+        <b>Importante sobre “Impacto Venezuela”</b>
+        <p>Los valores mostrados son una <strong>priorización automática de señales</strong>. No representan cantidad de trabajadores afectados, lesionados, daños materiales ni pérdidas económicas. Para confirmar impacto real deben verificarse exposición, vulnerabilidad, controles existentes y fuentes oficiales competentes.</p>
+      </div>`;
+    anchor.parentNode.insertBefore(section,anchor);
+  }
+
   const environmentTab=document.querySelector('.feed-tab[data-feed="air"]');
   if(environmentTab){
     const title=environmentTab.querySelector('b');
@@ -89,5 +168,15 @@
   if(feedMeta?.air){
     feedMeta.air.title='Exposición ambiental';
     feedMeta.air.action='Revisar radiación UV solar, calidad del aire, carga térmica orientativa, lluvia y viento según exposición real de los trabajadores.';
+  }
+
+  installImpactCounterExplanation();
+  installSourcesSection();
+  clarifyImpactDomains();
+
+  const impactDomainsRoot=document.querySelector('#impactDomains');
+  if(impactDomainsRoot){
+    const observer=new MutationObserver(()=>clarifyImpactDomains());
+    observer.observe(impactDomainsRoot,{childList:true,subtree:true});
   }
 })();
