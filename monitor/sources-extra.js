@@ -10,6 +10,7 @@
       .source-status{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:4px 7px;border-radius:999px;font-size:7.5px;font-weight:800;letter-spacing:.02em;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
       .source-status.active{background:#eef8ec;color:#477c31;border-color:#cfe4c8}.source-status.ready{background:#edf8f8;color:#007b85;border-color:#cbe5e7}.source-status.key{background:#fff8e8;color:#7a5b14;border-color:#eedca9}.source-status.error{background:#fff1f0;color:#9a3c35;border-color:#efcbc7}
       .source-card.firms{background:linear-gradient(145deg,#fff,#fff9f0);border-color:#f0dfbd}.source-card.firms .source-icon{background:#fff1da}
+      .source-card.openaq{background:linear-gradient(145deg,#fff,#f7fcff);border-color:#d8e8ef}.source-card.openaq .source-icon{background:#eaf6fb}
     `;
     document.head.appendChild(style);
   }
@@ -33,39 +34,50 @@
     addSourceCard({id:'glofas',icon:'🌊',name:'Copernicus GloFAS / GFM',subtitle:'Inundaciones',text:'Pronóstico y monitoreo global de inundaciones para complementar eventos con contexto hidrológico y territorial.',url:'https://global-flood.emergency.copernicus.eu/',status:'Fuente pública · próxima integración'});
     addSourceCard({id:'tsunami',icon:'🌊',name:'NOAA Tsunami',subtitle:'Tsunami',text:'Mensajes y avisos estructurados para vigilancia de amenazas de tsunami, incluido el Caribe.',url:'https://www.tsunami.gov/',status:'Fuente pública · próxima integración'});
     addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Alertas geomagnéticas y solares como contexto para GPS, comunicaciones y continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Mediciones de estaciones y sensores para contrastar los modelos ambientales cuando exista cobertura.',url:'https://openaq.org/',status:'Requiere API key gratuita',statusClass:'key'});
+    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Última medición ambiental disponible de estaciones/sensores cercanos para contrastar, cuando exista cobertura, el contexto modelado de Open-Meteo/CAMS. No es una medición ocupacional.',url:'https://openaq.org/',status:'Verificando API key…',statusClass:'ready',className:'openaq'});
     addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Infraestructura expuesta',text:'Hospitales, bomberos, carreteras, instalaciones y otros elementos territoriales para cruzar con amenazas.',url:'https://www.openstreetmap.org/',status:'Disponible · usado en el ecosistema',statusClass:'active'});
     addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para enriquecer la lectura situacional.',url:'https://reliefweb.int/',status:'Requiere appname aprobado',statusClass:'key'});
     addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Indicadores humanitarios',text:'Datos estandarizados de población, infraestructura y otros indicadores para enriquecer exposición territorial.',url:'https://data.humdata.org/hapi',status:'Requiere app identifier gratuito',statusClass:'key'});
   }
 
-  async function updateFirmsStatus(){
-    const badge=document.querySelector('[data-source-id="firms"] .source-status');
+  function setBadge(id,text,className){
+    const badge=document.querySelector(`[data-source-id="${id}"] .source-status`);
     if(!badge)return;
+    badge.textContent=text;
+    badge.className=`source-status ${className}`;
+  }
+
+  async function updateSourceStatus(){
     try{
       const r=await fetch(`${API}?feed=health`,{headers:{Accept:'application/json'}});
       const p=await r.json().catch(()=>({}));
-      if(r.ok&&p.nasa_firms_map_key_configured){
-        badge.textContent='Activo · VIIRS NOAA-20/21/Suomi-NPP'; badge.className='source-status active';
-      }else{
-        badge.textContent='Revisar MAP KEY / despliegue'; badge.className='source-status key';
-      }
+      if(!r.ok)throw new Error('health');
+
+      if(p.nasa_firms_map_key_configured) setBadge('firms','Activo · VIIRS NOAA-20/21/Suomi-NPP','active');
+      else setBadge('firms','Revisar MAP KEY / despliegue','key');
+
+      if(p.openaq_api_key_configured) setBadge('openaq','Clave configurada · medición observada','active');
+      else setBadge('openaq','Clave guardada · pendiente despliegue backend','ready');
     }catch{
-      badge.textContent='Estado temporalmente no disponible'; badge.className='source-status error';
+      setBadge('firms','Estado temporalmente no disponible','error');
+      setBadge('openaq','Estado temporalmente no disponible','error');
     }
   }
 
-  function loadIntelligenceLayer(){
+  function loadScript(src){
+    if(document.querySelector(`script[src="${src}"]`))return;
+    const script=document.createElement('script'); script.src=src; script.defer=false; document.body.appendChild(script);
+  }
+  function loadIntelligenceLayers(){
     if(!document.querySelector('link[href="./sst-intelligence.css"]')){
       const link=document.createElement('link'); link.rel='stylesheet'; link.href='./sst-intelligence.css'; document.head.appendChild(link);
     }
-    if(!document.querySelector('script[src="./sst-intelligence.js"]')){
-      const script=document.createElement('script'); script.src='./sst-intelligence.js'; script.defer=false; document.body.appendChild(script);
-    }
+    loadScript('./sst-intelligence.js');
+    loadScript('./openaq-ui.js');
   }
 
   installSourceStyles();
   installAdditionalSources();
-  updateFirmsStatus();
-  loadIntelligenceLayer();
+  updateSourceStatus();
+  loadIntelligenceLayers();
 })();
