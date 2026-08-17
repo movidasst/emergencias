@@ -1,0 +1,93 @@
+/* Capa Impacto Venezuela — extensión del Monitor SST */
+.impact-dashboard{
+  scroll-margin-top:16px;
+  background:linear-gradient(180deg,#ffffff,#f9fcfd);
+  border:1px solid var(--line);
+  border-radius:24px;
+  padding:18px;
+  box-shadow:0 12px 36px rgba(15,23,42,.05);
+  display:grid;
+  gap:16px;
+}
+.impact-dashboard-head{display:grid;gap:14px}
+.impact-dashboard-head h3{margin:0;color:var(--navy);font-size:24px;letter-spacing:-.025em}
+.impact-dashboard-head>div:first-child>p:last-child{margin:7px 0 0;font-size:13px;line-height:1.5;max-width:780px}
+.impact-level-counters{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.impact-level-counters span{
+  display:grid;justify-items:center;gap:1px;padding:10px 7px;border-radius:14px;
+  border:1px solid var(--line);background:#fff;font-size:10px;font-weight:800;text-transform:uppercase;
+}
+.impact-level-counters b{font-size:22px;line-height:1}
+.impact-level-counters .high{background:#fff5f4;border-color:#f3cfcb;color:#a93226}
+.impact-level-counters .medium{background:#fff9ed;border-color:#f2ddb0;color:#986000}
+.impact-level-counters .low{background:#f2f8f1;border-color:#d8e8d4;color:#397236}
+.impact-layout{display:grid;gap:14px}
+.impact-subtitle{margin:0 0 8px;font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.impact-domains{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.impact-domains article{
+  min-width:0;display:grid;grid-template-columns:34px 1fr;gap:8px;align-items:center;
+  background:#fff;border:1px solid #e5edf0;border-radius:15px;padding:10px;
+}
+.impact-domains article>span{display:grid;place-items:center;width:34px;height:34px;background:#f2f8f9;border-radius:11px;font-size:17px}
+.impact-domains article div{min-width:0}
+.impact-domains b{display:block;color:var(--navy);font-size:19px;line-height:1}
+.impact-domains small{display:block;margin-top:3px;color:var(--muted);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.impact-method-note{margin-top:10px;border:1px dashed #cbdde0;background:#f7fbfc;border-radius:15px;padding:11px 12px}
+.impact-method-note b{font-size:11px;color:var(--teal);text-transform:uppercase;letter-spacing:.06em}
+.impact-method-note p{margin:4px 0 0;font-size:11px;line-height:1.45;color:var(--muted)}
+.impact-detail{
+  background:#fff;border:1px solid #dfe9ec;border-radius:18px;padding:14px;min-height:260px;
+  box-shadow:0 8px 24px rgba(15,23,42,.035);display:grid;align-content:start;gap:12px;
+}
+.impact-empty{display:grid;place-items:center;text-align:center;align-content:center;min-height:220px;color:var(--muted);gap:5px}
+.impact-empty strong{color:var(--navy)}
+.impact-empty p{margin:0;max-width:340px;font-size:12px;line-height:1.45}
+.impact-detail-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:start}
+.impact-detail-head h4{margin:8px 0 4px;color:#1e293b;font-size:18px;line-height:1.2}
+.impact-detail-head p{margin:0;color:var(--muted);font-size:11px}
+.impact-level{display:inline-flex;padding:5px 8px;border-radius:999px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.045em}
+.impact-level.high{background:#feeceb;color:#a93226}
+.impact-level.medium{background:#fff4dd;color:#925700}
+.impact-level.low{background:#eaf6e8;color:#31722d}
+.impact-score{display:flex;align-items:baseline;justify-content:center;min-width:58px;padding:9px 10px;border-radius:14px;background:#f1f7f8;color:var(--teal)}
+.impact-score b{font-size:24px;line-height:1}.impact-score span{font-size:10px;font-weight:800}
+.impact-explain{display:grid;gap:6px;border-top:1px solid #edf2f4;border-bottom:1px solid #edf2f4;padding:11px 0}
+.impact-explain p{margin:0;color:var(--text);font-size:12px;line-height:1.5}
+.impact-explain span{font-size:10px;color:var(--muted)}
+.impact-explain b{color:var(--ink)}
+.impact-domain-chips{display:flex;gap:6px;flex-wrap:wrap}
+.impact-domain-chips span{padding:6px 8px;border-radius:999px;background:#f2f7f8;border:1px solid #e1ebed;color:var(--ink);font-size:10px;font-weight:700}
+.impact-actions{display:grid;gap:6px}
+.impact-actions>b{font-size:11px;color:var(--navy);text-transform:uppercase;letter-spacing:.055em}
+.impact-actions ul{margin:0;padding-left:18px;display:grid;gap:5px}
+.impact-actions li{font-size:11px;line-height:1.4;color:var(--text)}
+.impact-source{width:max-content;color:var(--teal);font-size:11px;font-weight:800;text-decoration:none;border-bottom:1px solid rgba(0,123,133,.25)}
+.impact-source:hover{color:var(--navy)}
+.impact-mini{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap;
+  border-radius:11px;padding:8px 9px;border:1px solid transparent;
+}
+.impact-mini b{font-size:10px;text-transform:uppercase;letter-spacing:.035em}
+.impact-mini span{font-size:10px;color:var(--muted)}
+.impact-mini.high{background:#fff6f5;border-color:#f3d4d0}.impact-mini.high b{color:#a93226}
+.impact-mini.medium{background:#fffaf0;border-color:#f2e1bd}.impact-mini.medium b{color:#8d5b00}
+.impact-mini.low{background:#f4f9f3;border-color:#dcebd9}.impact-mini.low b{color:#397236}
+.impact-open{
+  width:100%;border:0;border-top:1px solid #edf2f4;background:transparent;color:var(--teal);
+  padding:8px 0 0;font:800 10px Outfit;text-align:left;cursor:pointer;
+}
+.impact-open:hover{color:var(--navy)}
+.event-card.selected{border-color:#bcdadd;background:#f8fcfc;box-shadow:inset 3px 0 0 var(--teal)}
+.popup-card p b{color:var(--navy)}
+
+@media(min-width:720px){
+  .impact-dashboard{padding:22px}
+  .impact-dashboard-head{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+  .impact-level-counters{min-width:270px}
+  .impact-layout{grid-template-columns:minmax(270px,.72fr) minmax(0,1.28fr);align-items:start}
+  .impact-domains{grid-template-columns:repeat(2,1fr)}
+}
+@media(min-width:1040px){
+  .impact-domains{grid-template-columns:repeat(3,1fr)}
+  .impact-detail{padding:18px}
+}
