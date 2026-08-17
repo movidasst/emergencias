@@ -84,8 +84,10 @@
     loadScript('./hazard-explainer.js');
     // Capa semántica unificada: títulos, niveles y explicaciones coherentes en español.
     loadScript('./signal-semantics.js');
-    // Debe cargar al final: recalcula el popup después de que las capas anteriores agregan contenido.
+    // UX del popup: altura, scroll y recentrado.
     loadScript('./popup-ux.js');
+    // Guardia final: evita que un enriquecimiento posterior vuelva a introducir textos genéricos.
+    loadScript('./popup-semantic-guard.js');
   }
 
   installSourceStyles();
