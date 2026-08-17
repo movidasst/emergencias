@@ -28,16 +28,16 @@
   }
 
   function installAdditionalSources(){
-    addSourceCard({id:'firms',icon:'🔥',name:'NASA FIRMS',subtitle:'Fuego activo y anomalías térmicas',text:'Detecciones satelitales VIIRS NOAA-20, NOAA-21 y Suomi-NPP. La aplicación interpreta FRP, confianza, ubicación y contexto SST sin asumir daño confirmado.',url:'https://firms.modaps.eosdis.nasa.gov/',status:'Verificando conexión…',statusClass:'ready',className:'firms'});
-    addSourceCard({id:'gdacs',icon:'🚨',name:'GDACS',subtitle:'Alertas globales de desastres',text:'ONU + Comisión Europea. Alertas y contexto de terremotos, ciclones, inundaciones y otros eventos internacionales.',url:'https://www.gdacs.org/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'nhc',icon:'🌀',name:'NOAA / NHC',subtitle:'Ciclones tropicales',text:'Trayectorias, avisos y productos oficiales para ciclones del Atlántico y Caribe relevantes para Venezuela.',url:'https://www.nhc.noaa.gov/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'glofas',icon:'🌊',name:'Copernicus GloFAS / GFM',subtitle:'Inundaciones',text:'Pronóstico y monitoreo global de inundaciones para complementar eventos con contexto hidrológico y territorial.',url:'https://global-flood.emergency.copernicus.eu/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'tsunami',icon:'🌊',name:'NOAA Tsunami',subtitle:'Tsunami',text:'Mensajes y avisos estructurados para vigilancia de amenazas de tsunami, incluido el Caribe.',url:'https://www.tsunami.gov/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Alertas geomagnéticas y solares como contexto para GPS, comunicaciones y continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Fuente pública · próxima integración'});
-    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Última medición ambiental disponible de estaciones/sensores cercanos para contrastar, cuando exista cobertura, el contexto modelado de Open-Meteo/CAMS. No es una medición ocupacional.',url:'https://openaq.org/',status:'Verificando API key…',statusClass:'ready',className:'openaq'});
-    addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Exposición territorial cercana',text:'Hospitales, salud, bomberos, policía, combustible, farmacias y centros educativos próximos a cada señal para orientar verificación SST. Cercanía no equivale a afectación.',url:'https://www.openstreetmap.org/',status:'Activo · contexto territorial ≤5 km',statusClass:'active'});
-    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para enriquecer la lectura situacional.',url:'https://reliefweb.int/',status:'Pendiente aprobación de appname',statusClass:'key'});
-    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Contexto territorial',text:'Población de referencia e indicadores territoriales para contextualizar exposición. No representa personas afectadas por una señal.',url:'https://data.humdata.org/hapi',status:'Verificando app identifier…',statusClass:'ready'});
+    addSourceCard({id:'firms',icon:'🔥',name:'NASA FIRMS',subtitle:'Anomalías térmicas satelitales',text:'Detecciones VIIRS de puntos anormalmente calientes compatibles con fuego activo. No equivalen por sí solas a incendio estructural ni daño confirmado.',url:'https://firms.modaps.eosdis.nasa.gov/',status:'Verificando conexión…',statusClass:'ready',className:'firms'});
+    addSourceCard({id:'gdacs',icon:'🚨',name:'GDACS',subtitle:'Alertas globales de desastres',text:'ONU + Comisión Europea. El monitor traduce y explica los niveles Verde, Naranja y Rojo según el tipo de evento.',url:'https://www.gdacs.org/',status:'Verificando conexión…',statusClass:'ready'});
+    addSourceCard({id:'nhc',icon:'🌀',name:'NOAA / NHC',subtitle:'Ciclones tropicales',text:'Resumen oficial de sistemas tropicales del Atlántico/Caribe. La presencia de un ciclón no significa por sí sola que Venezuela esté bajo aviso.',url:'https://www.nhc.noaa.gov/',status:'Verificando conexión…',statusClass:'ready'});
+    addSourceCard({id:'glofas',icon:'🌊',name:'Copernicus GloFAS / GFM',subtitle:'Inundaciones',text:'Pronóstico y monitoreo global de inundaciones. Se incorporará cuando quede validado un acceso estable y útil para la lectura SST.',url:'https://global-flood.emergency.copernicus.eu/',status:'Pendiente de integración',statusClass:'key'});
+    addSourceCard({id:'tsunami',icon:'🌊',name:'NOAA Tsunami',subtitle:'Mensajes de tsunami',text:'Mensajes estructurados de los centros NOAA. El monitor diferencia advertencia, aviso, vigilancia, información y amenaza internacional.',url:'https://www.tsunami.gov/',status:'Verificando conexión…',statusClass:'ready'});
+    addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Escalas G, S y R para tormentas geomagnéticas, radiación solar y apagones de radio, traducidas a efectos sobre continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Verificando conexión…',statusClass:'ready'});
+    addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Últimas mediciones ambientales disponibles de estaciones/sensores cercanos para contrastar el contexto modelado. No son mediciones de higiene ocupacional.',url:'https://openaq.org/',status:'Verificando API…',statusClass:'ready',className:'openaq'});
+    addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Exposición territorial cercana',text:'Hospitales, salud, bomberos, policía, combustible, farmacias y centros educativos próximos para orientar qué verificar. Cercanía no equivale a afectación.',url:'https://www.openstreetmap.org/',status:'Activo · contexto territorial ≤5 km',statusClass:'active'});
+    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas para enriquecer la lectura situacional una vez aprobado el appname.',url:'https://reliefweb.int/',status:'Pendiente aprobación de appname',statusClass:'key'});
+    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Contexto territorial',text:'Población de referencia e indicadores territoriales para contextualizar exposición. No representan personas afectadas por una señal.',url:'https://data.humdata.org/hapi',status:'Verificando app identifier…',statusClass:'ready'});
   }
 
   function setBadge(id,text,className){
@@ -57,12 +57,11 @@
       else setBadge('firms','Revisar MAP KEY / despliegue','key');
 
       if(p.openaq_api_key_configured) setBadge('openaq','Clave configurada · medición observada','active');
-      else setBadge('openaq','Clave guardada · pendiente despliegue backend','ready');
+      else setBadge('openaq','Clave guardada · pendiente backend','ready');
 
       if(p.hdx_hapi_app_identifier_configured) setBadge('hdx','Identificador configurado · verificando datos','ready');
     }catch{
-      setBadge('firms','Estado temporalmente no disponible','error');
-      setBadge('openaq','Estado temporalmente no disponible','error');
+      ['firms','gdacs','nhc','tsunami','swpc','openaq','hdx'].forEach(id=>setBadge(id,'Estado temporalmente no disponible','error'));
     }
   }
 
@@ -83,6 +82,8 @@
     loadScript('./openaq-ui.js');
     loadScript('./future-sources-ui.js');
     loadScript('./hazard-explainer.js');
+    // Capa semántica unificada: títulos, niveles y explicaciones coherentes en español.
+    loadScript('./signal-semantics.js');
     // Debe cargar al final: recalcula el popup después de que las capas anteriores agregan contenido.
     loadScript('./popup-ux.js');
   }
