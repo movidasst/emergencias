@@ -36,8 +36,8 @@
     addSourceCard({id:'swpc',icon:'🛰️',name:'NOAA SWPC',subtitle:'Clima espacial',text:'Alertas geomagnéticas y solares como contexto para GPS, comunicaciones y continuidad tecnológica.',url:'https://www.swpc.noaa.gov/',status:'Fuente pública · próxima integración'});
     addSourceCard({id:'openaq',icon:'🌫️',name:'OpenAQ',subtitle:'Calidad del aire medida',text:'Última medición ambiental disponible de estaciones/sensores cercanos para contrastar, cuando exista cobertura, el contexto modelado de Open-Meteo/CAMS. No es una medición ocupacional.',url:'https://openaq.org/',status:'Verificando API key…',statusClass:'ready',className:'openaq'});
     addSourceCard({id:'osm',icon:'🗺️',name:'OpenStreetMap / Overpass',subtitle:'Infraestructura expuesta',text:'Hospitales, bomberos, carreteras, instalaciones y otros elementos territoriales para cruzar con amenazas.',url:'https://www.openstreetmap.org/',status:'Disponible · usado en el ecosistema',statusClass:'active'});
-    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para enriquecer la lectura situacional.',url:'https://reliefweb.int/',status:'Requiere appname aprobado',statusClass:'key'});
-    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Indicadores humanitarios',text:'Datos estandarizados de población, infraestructura y otros indicadores para enriquecer exposición territorial.',url:'https://data.humdata.org/hapi',status:'Requiere app identifier gratuito',statusClass:'key'});
+    addSourceCard({id:'reliefweb',icon:'🆘',name:'OCHA ReliefWeb',subtitle:'Contexto humanitario',text:'Informes y actualizaciones curadas sobre emergencias y desastres para enriquecer la lectura situacional.',url:'https://reliefweb.int/',status:'Pendiente aprobación de appname',statusClass:'key'});
+    addSourceCard({id:'hdx',icon:'🌍',name:'OCHA HDX HAPI',subtitle:'Contexto territorial',text:'Población de referencia e indicadores territoriales para contextualizar exposición. No representa personas afectadas por una señal.',url:'https://data.humdata.org/hapi',status:'Verificando app identifier…',statusClass:'ready'});
   }
 
   function setBadge(id,text,className){
@@ -58,6 +58,8 @@
 
       if(p.openaq_api_key_configured) setBadge('openaq','Clave configurada · medición observada','active');
       else setBadge('openaq','Clave guardada · pendiente despliegue backend','ready');
+
+      if(p.hdx_hapi_app_identifier_configured) setBadge('hdx','Identificador configurado · verificando datos','ready');
     }catch{
       setBadge('firms','Estado temporalmente no disponible','error');
       setBadge('openaq','Estado temporalmente no disponible','error');
@@ -74,6 +76,7 @@
     }
     loadScript('./sst-intelligence.js');
     loadScript('./openaq-ui.js');
+    loadScript('./future-sources-ui.js');
   }
 
   installSourceStyles();
