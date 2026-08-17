@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional para anticipar eventos naturales, interrupciones, radiación y condiciones ambientales.">
+  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional e impacto potencial sobre trabajadores, instalaciones, servicios y continuidad.">
   <meta property="og:title" content="Monitor SST Venezuela | La Movida de SST Plus">
-  <meta property="og:description" content="Venezuela primero: señales para prevención, emergencias y continuidad operacional.">
+  <meta property="og:description" content="Venezuela primero: señales, impacto potencial y acciones preventivas para SST, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emergencias.movidasst.com/monitor/">
   <title>Monitor SST Venezuela | La Movida de SST Plus</title>
@@ -15,6 +15,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./impact.css">
 </head>
 <body>
   <div class="top-line"></div>
@@ -46,11 +47,11 @@
           <span class="country-tag">🇻🇪 Venezuela primero</span>
         </div>
         <h2>Señales que pueden cambiar una decisión preventiva.</h2>
-        <p>El foco inicial es Venezuela y su entorno inmediato. El monitor reúne señales naturales, de conectividad, radiación y ambiente para apoyar decisiones de SST, emergencias y continuidad operacional.</p>
+        <p>El foco inicial es Venezuela y su entorno inmediato. Además de mostrar la señal, el monitor estima su relevancia preventiva y qué ámbitos de SST conviene verificar antes de actuar.</p>
       </div>
       <div class="hero-actions">
         <button class="primary-btn" id="refreshBtn" type="button">↻ Actualizar datos</button>
-        <a class="secondary-btn" href="#workspace">Ver mapa</a>
+        <a class="secondary-btn" href="#impactDashboard">Ver impacto Venezuela</a>
       </div>
     </section>
 
@@ -149,6 +150,35 @@
       </aside>
     </section>
 
+    <section class="impact-dashboard" id="impactDashboard" aria-label="Impacto potencial Venezuela">
+      <div class="impact-dashboard-head">
+        <div>
+          <p class="eyebrow">IMPACTO VENEZUELA</p>
+          <h3>¿Qué podría verse comprometido?</h3>
+          <p>Lectura preventiva calculada con severidad, ubicación/proximidad y tipo de señal. Es una ayuda para priorizar verificaciones, no una predicción de daño.</p>
+        </div>
+        <div class="impact-level-counters" aria-label="Resumen por impacto potencial">
+          <span class="high"><b id="impactHigh">0</b> alto</span>
+          <span class="medium"><b id="impactMedium">0</b> medio</span>
+          <span class="low"><b id="impactLow">0</b> bajo</span>
+        </div>
+      </div>
+
+      <div class="impact-layout">
+        <div>
+          <p class="impact-subtitle">Ámbitos a verificar</p>
+          <div class="impact-domains" id="impactDomains"></div>
+          <div class="impact-method-note">
+            <b>Cómo leerlo</b>
+            <p>Un impacto potencial alto significa “verificar primero”, no “daño confirmado”. La decisión final debe considerar exposición real, vulnerabilidad, controles y fuentes oficiales.</p>
+          </div>
+        </div>
+        <article class="impact-detail" id="impactDetail" aria-live="polite">
+          <div class="impact-empty"><strong>Selecciona una señal</strong><p>Toca una tarjeta del listado para ver su lectura de impacto potencial sobre Venezuela.</p></div>
+        </article>
+      </div>
+    </section>
+
     <section class="decision-card">
       <div class="decision-title">
         <p class="eyebrow">LECTURA SST</p>
@@ -164,7 +194,7 @@
 
     <section class="disclaimer-card">
       <strong>Importante</strong>
-      <p>Este monitor es una herramienta de inteligencia situacional y alerta temprana. No sustituye a Protección Civil, INAMEH, FUNVISIS, autoridades sanitarias ni otras fuentes oficiales competentes en Venezuela.</p>
+      <p>Este monitor es una herramienta de inteligencia situacional y alerta temprana. No sustituye a Protección Civil, INAMEH, FUNVISIS, autoridades sanitarias ni otras fuentes oficiales competentes en Venezuela. La capa “Impacto Venezuela” es una priorización preventiva automatizada y debe validarse profesionalmente.</p>
     </section>
   </main>
 
