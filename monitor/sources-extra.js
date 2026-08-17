@@ -82,12 +82,11 @@
     loadScript('./openaq-ui.js');
     loadScript('./future-sources-ui.js');
     loadScript('./hazard-explainer.js');
-    // Capa semántica unificada: títulos, niveles y explicaciones coherentes en español.
     loadScript('./signal-semantics.js');
-    // UX del popup: altura, scroll y recentrado.
     loadScript('./popup-ux.js');
-    // Guardia final: evita que un enriquecimiento posterior vuelva a introducir textos genéricos.
     loadScript('./popup-semantic-guard.js');
+    // Hotfix V2: último en ejecutarse. Resuelve el evento por id, coordenadas o título.
+    loadScript('./signal-semantics-v2.js?v=20260817-1727');
   }
 
   installSourceStyles();
