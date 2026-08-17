@@ -68,13 +68,17 @@
 
   function loadScript(src){
     if(document.querySelector(`script[src="${src}"]`))return;
-    const script=document.createElement('script'); script.src=src; script.defer=false; document.body.appendChild(script);
+    const script=document.createElement('script');
+    script.src=src;
+    script.async=false;
+    document.body.appendChild(script);
   }
   function loadIntelligenceLayers(){
     if(!document.querySelector('link[href="./sst-intelligence.css"]')){
       const link=document.createElement('link'); link.rel='stylesheet'; link.href='./sst-intelligence.css'; document.head.appendChild(link);
     }
     loadScript('./sst-intelligence.js');
+    loadScript('./exposure-intelligence.js');
     loadScript('./openaq-ui.js');
     loadScript('./future-sources-ui.js');
   }
