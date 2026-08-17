@@ -13,7 +13,13 @@
   function apply(popup){
     if (!popup || applying || !semantics()?.applyPopup) return;
     applying = true;
-    try { semantics().applyPopup(popup); }
+    try {
+      semantics().applyPopup(popup);
+      /* Oculta el antiguo bloque específico de GDACS si quedó montado por compatibilidad.
+         La nueva capa semántica es la única explicación visible. */
+      const root=popup?.getElement?.()?.querySelector('.popup-card,.sst-popup');
+      root?.querySelectorAll('.gdacs-definitive').forEach(n=>{ n.hidden=true; });
+    }
     catch (e) { console.warn('Semántica final del popup', e); }
     finally { applying = false; }
     try { popup.update?.(); } catch {}
