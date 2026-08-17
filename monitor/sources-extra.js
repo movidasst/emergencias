@@ -82,6 +82,7 @@
     loadScript('./territorial-exposure.js');
     loadScript('./openaq-ui.js');
     loadScript('./future-sources-ui.js');
+    loadScript('./hazard-explainer.js');
   }
 
   installSourceStyles();
