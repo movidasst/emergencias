@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#007b85">
+  <meta name="description" content="Monitor SST de La Movida de SST Plus: vigilancia situacional de eventos naturales, infraestructura, radiación y ambiente con datos de World Monitor.">
+  <meta property="og:title" content="Monitor SST | La Movida de SST Plus">
+  <meta property="og:description" content="Inteligencia situacional para prevención, emergencias y continuidad operacional.">
+  <meta property="og:type" content="website">
+  <title>Monitor SST | La Movida de SST Plus</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="top-line"></div>
+  <header class="app-header">
+    <div>
+      <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
+      <h1>Monitor SST</h1>
+      <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
+    </div>
+    <div class="live-pill" id="livePill"><span></span><b>Conectando</b></div>
+  </header>
+
+  <main class="shell">
+    <section class="hero-card">
+      <div>
+        <span class="tag">De la Reacción a la Prevención</span>
+        <h2>¿Qué está pasando y qué puede afectar la seguridad, la salud o la continuidad?</h2>
+        <p>Vista SST de señales globales consolidadas por World Monitor. Filtra por tipo de evento, revisa la ubicación y abre cada señal con contexto técnico.</p>
+      </div>
+      <button class="primary-btn" id="refreshBtn" type="button">Actualizar datos</button>
+    </section>
+
+    <section class="stats" aria-label="Resumen">
+      <article><span>Señales visibles</span><strong id="statTotal">—</strong></article>
+      <article><span>Críticas</span><strong id="statCritical">—</strong></article>
+      <article><span>Países / zonas</span><strong id="statCountries">—</strong></article>
+      <article><span>Última actualización</span><strong id="statTime">—</strong></article>
+    </section>
+
+    <nav class="feed-tabs" aria-label="Fuentes de monitoreo">
+      <button class="feed-tab active" data-feed="natural" type="button">🌎 Naturales</button>
+      <button class="feed-tab" data-feed="outages" type="button">🌐 Infraestructura</button>
+      <button class="feed-tab" data-feed="radiation" type="button">☢️ Radiación</button>
+      <button class="feed-tab" data-feed="air" type="button">🌬️ Ambiente</button>
+    </nav>
+
+    <section class="toolbar">
+      <label class="search-box">
+        <span>⌕</span>
+        <input id="searchInput" type="search" placeholder="Buscar país, ciudad, evento o fuente…" autocomplete="off">
+      </label>
+      <select id="severityFilter" aria-label="Filtrar por severidad">
+        <option value="all">Toda severidad</option>
+        <option value="critical">Crítica</option>
+        <option value="warning">Alerta</option>
+        <option value="advisory">Informativa</option>
+      </select>
+    </section>
+
+    <section class="workspace">
+      <div class="map-card">
+        <div id="map" role="application" aria-label="Mapa de señales SST"></div>
+        <div class="map-legend"><span class="dot critical"></span> crítica <span class="dot warning"></span> alerta <span class="dot advisory"></span> informativa</div>
+      </div>
+
+      <aside class="feed-panel">
+        <div class="panel-head">
+          <div><p class="eyebrow">SEÑALES ACTIVAS</p><h3 id="panelTitle">Eventos naturales</h3></div>
+          <span id="resultCount">0</span>
+        </div>
+        <div class="feed-list" id="feedList" aria-live="polite"></div>
+      </aside>
+    </section>
+
+    <section class="method-card">
+      <div>
+        <p class="eyebrow">LECTURA SST</p>
+        <h3>Una señal no equivale automáticamente a un riesgo ocupacional.</h3>
+      </div>
+      <p>El monitor sirve como alerta temprana y contexto. La decisión preventiva debe considerar exposición real, trabajadores potencialmente afectados, vulnerabilidad, controles existentes, continuidad operacional y fuentes oficiales locales.</p>
+    </section>
+  </main>
+
+  <footer>
+    <strong>La Movida de SST Plus</strong> · www.movidasst.com · De la Reacción a la Prevención<br>
+    <small>Integración basada en la API de World Monitor. World Monitor © sus autores, código bajo AGPL-3.0. Las fuentes originales conservan sus propias condiciones y atribuciones.</small>
+  </footer>
+
+  <div class="toast" id="toast" role="status"></div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="./app.js"></script>
+</body>
+</html>
