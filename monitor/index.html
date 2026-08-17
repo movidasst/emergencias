@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Monitor SST de La Movida de SST Plus: vigilancia situacional de eventos naturales, conectividad, radiación y ambiente con fuentes públicas y enriquecimiento opcional de World Monitor.">
-  <meta property="og:title" content="Monitor SST | La Movida de SST Plus">
-  <meta property="og:description" content="Inteligencia situacional para prevención, emergencias y continuidad operacional.">
+  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional para anticipar eventos naturales, interrupciones, radiación y condiciones ambientales.">
+  <meta property="og:title" content="Monitor SST Venezuela | La Movida de SST Plus">
+  <meta property="og:description" content="Venezuela primero: señales para prevención, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
-  <title>Monitor SST | La Movida de SST Plus</title>
+  <meta property="og:url" content="https://emergencias.movidasst.com/monitor/">
+  <title>Monitor SST Venezuela | La Movida de SST Plus</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,79 +18,160 @@
 </head>
 <body>
   <div class="top-line"></div>
+
   <header class="app-header">
-    <div>
-      <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
-      <h1>Monitor SST</h1>
-      <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
+    <div class="brand-block">
+      <a class="back-btn" href="https://emergencias.movidasst.com/" aria-label="Volver a Emergencias La Movida SST">
+        <span aria-hidden="true">←</span>
+        <span>Emergencias</span>
+      </a>
+      <div>
+        <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
+        <h1>Monitor SST <span>Venezuela</span></h1>
+        <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
+      </div>
     </div>
-    <div class="live-pill" id="livePill"><span></span><b>Conectando</b></div>
+
+    <div class="status-stack">
+      <div class="live-pill" id="livePill"><span></span><b>Conectando</b></div>
+      <small id="providerMode">Preparando fuentes</small>
+    </div>
   </header>
 
   <main class="shell">
     <section class="hero-card">
-      <div>
-        <span class="tag">De la Reacción a la Prevención</span>
-        <h2>¿Qué está pasando y qué puede afectar la seguridad, la salud o la continuidad?</h2>
-        <p>Vista SST de señales globales. El sistema prioriza World Monitor cuando existe acceso y mantiene continuidad mediante fuentes públicas como NASA, USGS, IODA, Safecast y Open-Meteo.</p>
+      <div class="hero-copy">
+        <div class="hero-tags">
+          <span class="tag">De la Reacción a la Prevención</span>
+          <span class="country-tag">🇻🇪 Venezuela primero</span>
+        </div>
+        <h2>Señales que pueden cambiar una decisión preventiva.</h2>
+        <p>El foco inicial es Venezuela y su entorno inmediato. El monitor reúne señales naturales, de conectividad, radiación y ambiente para apoyar decisiones de SST, emergencias y continuidad operacional.</p>
       </div>
-      <button class="primary-btn" id="refreshBtn" type="button">Actualizar datos</button>
+      <div class="hero-actions">
+        <button class="primary-btn" id="refreshBtn" type="button">↻ Actualizar datos</button>
+        <a class="secondary-btn" href="#workspace">Ver mapa</a>
+      </div>
     </section>
 
-    <section class="stats" aria-label="Resumen">
-      <article><span>Señales visibles</span><strong id="statTotal">—</strong></article>
-      <article><span>Críticas</span><strong id="statCritical">—</strong></article>
-      <article><span>Países / zonas</span><strong id="statCountries">—</strong></article>
-      <article><span>Última actualización</span><strong id="statTime">—</strong></article>
+    <section class="venezuela-focus" aria-label="Cobertura geográfica">
+      <div class="flag-line" aria-hidden="true"><i></i><i></i><i></i></div>
+      <div class="focus-copy">
+        <p class="eyebrow">COBERTURA PRIORITARIA</p>
+        <h3>Venezuela + entorno de impacto</h3>
+        <p>Incluye señales dentro del país y eventos cercanos capaces de afectar trabajadores, instalaciones, movilidad, servicios o continuidad.</p>
+      </div>
+      <div class="scope-switch" role="group" aria-label="Cambiar cobertura">
+        <button class="scope-btn active" data-scope="ve" type="button">Venezuela</button>
+        <button class="scope-btn" data-scope="latam" type="button">LatAm</button>
+        <button class="scope-btn" data-scope="world" type="button">Mundo</button>
+      </div>
     </section>
 
-    <nav class="feed-tabs" aria-label="Fuentes de monitoreo">
-      <button class="feed-tab active" data-feed="natural" type="button">🌎 Naturales</button>
-      <button class="feed-tab" data-feed="outages" type="button">🌐 Infraestructura</button>
-      <button class="feed-tab" data-feed="radiation" type="button">☢️ Radiación</button>
-      <button class="feed-tab" data-feed="air" type="button">🌬️ Ambiente</button>
-    </nav>
+    <section class="stats" aria-label="Resumen del monitor">
+      <article>
+        <span>Señales en foco</span>
+        <strong id="statTotal">—</strong>
+        <small id="statScope">Venezuela + entorno</small>
+      </article>
+      <article>
+        <span>Prioridad alta</span>
+        <strong id="statCritical">—</strong>
+        <small>requieren verificación</small>
+      </article>
+      <article>
+        <span>Fuentes activas</span>
+        <strong id="statSources">—</strong>
+        <small>según señal disponible</small>
+      </article>
+      <article>
+        <span>Actualizado</span>
+        <strong id="statTime">—</strong>
+        <small>hora de Venezuela</small>
+      </article>
+    </section>
+
+    <section class="feed-section">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CAPAS DE VIGILANCIA</p>
+          <h3>¿Qué quieres observar?</h3>
+        </div>
+      </div>
+
+      <nav class="feed-tabs" aria-label="Fuentes de monitoreo">
+        <button class="feed-tab active" data-feed="natural" type="button"><span>🌎</span><b>Naturales</b><small>Sismos, incendios, tormentas…</small></button>
+        <button class="feed-tab" data-feed="outages" type="button"><span>🌐</span><b>Conectividad</b><small>Interrupciones y degradación</small></button>
+        <button class="feed-tab" data-feed="radiation" type="button"><span>☢️</span><b>Radiación</b><small>Observaciones disponibles</small></button>
+        <button class="feed-tab" data-feed="air" type="button"><span>🌬️</span><b>Ambiente</b><small>AQI y material particulado</small></button>
+      </nav>
+    </section>
 
     <section class="toolbar">
       <label class="search-box">
-        <span>⌕</span>
-        <input id="searchInput" type="search" placeholder="Buscar país, ciudad, evento o fuente…" autocomplete="off">
+        <span aria-hidden="true">⌕</span>
+        <input id="searchInput" type="search" placeholder="Buscar ciudad, estado, evento o fuente…" autocomplete="off">
       </label>
       <select id="severityFilter" aria-label="Filtrar por severidad">
-        <option value="all">Toda severidad</option>
-        <option value="critical">Crítica</option>
-        <option value="warning">Alerta</option>
+        <option value="all">Toda prioridad</option>
+        <option value="critical">Prioridad alta</option>
+        <option value="warning">Atención</option>
         <option value="advisory">Informativa</option>
       </select>
     </section>
 
-    <section class="workspace">
+    <section class="workspace" id="workspace">
       <div class="map-card">
+        <div class="map-head">
+          <div>
+            <p class="eyebrow">VISTA TERRITORIAL</p>
+            <strong id="mapScopeTitle">Venezuela + entorno</strong>
+          </div>
+          <button id="recenterBtn" type="button">⌖ Recentrar</button>
+        </div>
         <div id="map" role="application" aria-label="Mapa de señales SST"></div>
-        <div class="map-legend"><span class="dot critical"></span> crítica <span class="dot warning"></span> alerta <span class="dot advisory"></span> informativa</div>
+        <div class="map-legend">
+          <span><i class="dot critical"></i> prioridad alta</span>
+          <span><i class="dot warning"></i> atención</span>
+          <span><i class="dot advisory"></i> informativa</span>
+        </div>
       </div>
 
       <aside class="feed-panel">
         <div class="panel-head">
-          <div><p class="eyebrow">SEÑALES ACTIVAS</p><h3 id="panelTitle">Eventos naturales</h3></div>
+          <div>
+            <p class="eyebrow">SEÑALES EN FOCO</p>
+            <h3 id="panelTitle">Eventos naturales · Venezuela</h3>
+          </div>
           <span id="resultCount">0</span>
         </div>
         <div class="feed-list" id="feedList" aria-live="polite"></div>
       </aside>
     </section>
 
-    <section class="method-card">
-      <div>
+    <section class="decision-card">
+      <div class="decision-title">
         <p class="eyebrow">LECTURA SST</p>
-        <h3>Una señal no equivale automáticamente a un riesgo ocupacional.</h3>
+        <h3>Del dato a una decisión preventiva</h3>
+        <p>Una señal externa no equivale automáticamente a un riesgo ocupacional. El profesional debe convertirla en una pregunta sobre exposición real.</p>
       </div>
-      <p>El monitor sirve como alerta temprana y contexto. La decisión preventiva debe considerar exposición real, trabajadores potencialmente afectados, vulnerabilidad, controles existentes, continuidad operacional y fuentes oficiales locales.</p>
+      <div class="decision-steps">
+        <article><span>1</span><div><b>Detecta</b><p>¿La señal puede alcanzar una sede, ruta, trabajador o servicio crítico?</p></div></article>
+        <article><span>2</span><div><b>Verifica</b><p>Contrasta hora, ubicación, severidad y fuente oficial antes de escalar.</p></div></article>
+        <article><span>3</span><div><b>Actúa</b><p>Aplica el plan, controles y comunicación proporcional al impacto esperado.</p></div></article>
+      </div>
+    </section>
+
+    <section class="disclaimer-card">
+      <strong>Importante</strong>
+      <p>Este monitor es una herramienta de inteligencia situacional y alerta temprana. No sustituye a Protección Civil, INAMEH, FUNVISIS, autoridades sanitarias ni otras fuentes oficiales competentes en Venezuela.</p>
     </section>
   </main>
 
   <footer>
+    <a class="footer-back" href="https://emergencias.movidasst.com/">← Volver al Gestor de Emergencias</a>
     <strong>La Movida de SST Plus</strong> · www.movidasst.com · De la Reacción a la Prevención<br>
-    <small>Arquitectura basada en fuentes abiertas y enriquecimiento opcional de World Monitor. Datos atribuidos a sus proveedores originales; cada fuente conserva sus propias condiciones de uso.</small>
+    <small>Fuentes abiertas y enriquecimiento opcional de World Monitor. Cada proveedor conserva sus condiciones de uso y atribución.</small>
   </footer>
 
   <div class="toast" id="toast" role="status"></div>
