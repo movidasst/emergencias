@@ -58,13 +58,40 @@ function rateLimited(ip: string) {
   return bucket.count > MAX_REQUESTS_PER_WINDOW;
 }
 
+async function fetchWorldMonitor(path: string, apiKey?: string) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12_000);
+  try {
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+      'User-Agent': 'La-Movida-SST-Monitor/1.0',
+    };
+    if (apiKey) headers['X-WorldMonitor-Key'] = apiKey;
+
+    const upstream = await fetch(`${WORLD_MONITOR_BASE}${path}`, {
+      method: 'GET',
+      headers,
+      signal: controller.signal,
+    });
+
+    const contentType = upstream.headers.get('content-type') || '';
+    const payload = contentType.includes('application/json')
+      ? await upstream.json()
+      : { raw: await upstream.text() };
+
+    return { upstream, payload };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
 
   if (!ALLOWED_ORIGINS.has(origin)) {
     return new Response(JSON.stringify({ error: 'ORIGIN_NOT_ALLOWED' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Vary': 'Origin' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8', Vary: 'Origin' },
     });
   }
 
@@ -81,36 +108,59 @@ Deno.serve(async (req: Request) => {
     return json({ error: 'RATE_LIMITED' }, 429, origin, { 'Retry-After': '60' });
   }
 
-  const apiKey = Deno.env.get('WORLD_MONITOR_API_KEY');
-  if (!apiKey) {
-    return json({ error: 'WORLD_MONITOR_API_KEY_NOT_CONFIGURED' }, 503, origin);
-  }
-
   const url = new URL(req.url);
   const feed = url.searchParams.get('feed') || 'natural';
-  const endpoint = FEEDS[feed];
-  if (!endpoint) {
-    return json({ error: 'INVALID_FEED', allowed: Object.keys(FEEDS) }, 400, origin);
+
+  // World Monitor documents /api/health as a public endpoint. This gives us a
+  // safe connectivity/freshness diagnostic without bypassing API-key gating.
+  if (feed === 'health') {
+    try {
+      const { upstream, payload } = await fetchWorldMonitor('/api/health?compact=1');
+      if (!upstream.ok) {
+        return json(
+          { error: 'WORLD_MONITOR_HEALTH_UNAVAILABLE', upstream_status: upstream.status },
+          upstream.status >= 500 ? 502 : upstream.status,
+          origin,
+        );
+      }
+      return json(
+        {
+          feed: 'health',
+          fetched_at: new Date().toISOString(),
+          source: 'World Monitor',
+          data: payload,
+        },
+        200,
+        origin,
+        { 'Cache-Control': 'no-store', 'X-Data-Source': 'World Monitor' },
+      );
+    } catch (error) {
+      const isAbort = error instanceof DOMException && error.name === 'AbortError';
+      console.error('World Monitor health failure', error);
+      return json({ error: isAbort ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE' }, 502, origin);
+    }
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
+  const endpoint = FEEDS[feed];
+  if (!endpoint) {
+    return json({ error: 'INVALID_FEED', allowed: [...Object.keys(FEEDS), 'health'] }, 400, origin);
+  }
+
+  const apiKey = Deno.env.get('WORLD_MONITOR_API_KEY');
+  if (!apiKey) {
+    return json(
+      {
+        error: 'WORLD_MONITOR_API_KEY_NOT_CONFIGURED',
+        provider: 'World Monitor',
+        required_secret: 'WORLD_MONITOR_API_KEY',
+      },
+      503,
+      origin,
+    );
+  }
 
   try {
-    const upstream = await fetch(`${WORLD_MONITOR_BASE}${endpoint}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-WorldMonitor-Key': apiKey,
-        'User-Agent': 'La-Movida-SST-Monitor/1.0',
-      },
-      signal: controller.signal,
-    });
-
-    const contentType = upstream.headers.get('content-type') || '';
-    const payload = contentType.includes('application/json')
-      ? await upstream.json()
-      : { raw: await upstream.text() };
+    const { upstream, payload } = await fetchWorldMonitor(endpoint, apiKey);
 
     if (!upstream.ok) {
       console.error('World Monitor upstream error', upstream.status, payload);
@@ -139,7 +189,5 @@ Deno.serve(async (req: Request) => {
     const isAbort = error instanceof DOMException && error.name === 'AbortError';
     console.error('World Monitor proxy failure', error);
     return json({ error: isAbort ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE' }, 502, origin);
-  } finally {
-    clearTimeout(timeout);
   }
 });
