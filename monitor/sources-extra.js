@@ -83,6 +83,8 @@
     loadScript('./openaq-ui.js');
     loadScript('./future-sources-ui.js');
     loadScript('./hazard-explainer.js');
+    // Debe cargar al final: recalcula el popup después de que las capas anteriores agregan contenido.
+    loadScript('./popup-ux.js');
   }
 
   installSourceStyles();
