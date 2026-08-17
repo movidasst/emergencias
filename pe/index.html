@@ -4,15 +4,15 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Centro de Inteligencia Situacional SST para Venezuela de La Movida de SST Plus: señales, impacto preventivo, emergencias y continuidad operacional.">
+  <meta name="description" content="Aplicación Plan de Emergencias de La Movida de SST Plus para identificar amenazas, evaluar vulnerabilidad y construir escenarios de emergencia.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_VE">
   <meta property="og:site_name" content="La Movida de SST Plus">
-  <meta property="og:url" content="https://emergencias.movidasst.com/">
-  <meta property="og:title" content="Centro de Inteligencia Situacional SST | Venezuela">
-  <meta property="og:description" content="Venezuela primero: monitoreo situacional, impacto potencial SST y apoyo a decisiones preventivas.">
-  <link rel="canonical" href="https://emergencias.movidasst.com/">
-  <title>Centro de Inteligencia Situacional SST | La Movida SST Plus</title>
+  <meta property="og:url" content="https://emergencias.movidasst.com/pe/">
+  <meta property="og:title" content="Plan de Emergencias | La Movida de SST Plus">
+  <meta property="og:description" content="Herramienta guiada para amenazas, vulnerabilidad, escenarios, capacidades y brechas del Plan de Emergencias.">
+  <link rel="canonical" href="https://emergencias.movidasst.com/pe/">
+  <title>Plan de Emergencias | La Movida de SST Plus</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
@@ -27,7 +27,7 @@
     .switch a.active{background:#fff;color:var(--navy);box-shadow:0 4px 12px rgba(15,23,42,.08)}
     .switch a:not(.active):hover{color:var(--teal);background:rgba(255,255,255,.55)}
     iframe{display:block;width:100%;height:calc(100dvh - 68px);border:0;background:#f8fafc}
-    @media(max-width:680px){.modulebar{height:70px;align-items:center}.brand strong{font-size:12px;max-width:135px}.brand small{font-size:8px}.switch{gap:3px;padding:3px}.switch a{padding:7px 8px;font-size:10px;min-height:38px}.switch a span.label-long{display:none}iframe{height:calc(100dvh - 74px)}}
+    @media(max-width:680px){.modulebar{height:70px}.brand strong{font-size:12px;max-width:135px}.brand small{font-size:8px}.switch{gap:3px;padding:3px}.switch a{padding:7px 8px;font-size:10px;min-height:38px}.switch a span.label-long{display:none}iframe{height:calc(100dvh - 74px)}}
   </style>
 </head>
 <body>
@@ -37,22 +37,10 @@
       <strong>Emergencias · Venezuela</strong>
     </div>
     <nav class="switch" aria-label="Cambiar módulo">
-      <a class="active" href="/" aria-current="page">📡 <span>Inteligencia</span></a>
-      <a href="/pe/">📋 <span class="label-long">Plan de </span><span>Emergencias</span></a>
+      <a href="/">📡 <span>Inteligencia</span></a>
+      <a class="active" href="/pe/" aria-current="page">📋 <span class="label-long">Plan de </span><span>Emergencias</span></a>
     </nav>
   </header>
-  <iframe id="moduleFrame" src="/monitor/" title="Centro de Inteligencia Situacional SST Venezuela" loading="eager"></iframe>
-  <script>
-    const frame=document.getElementById('moduleFrame');
-    frame.addEventListener('load',()=>{
-      try{
-        const d=frame.contentDocument;
-        const top=d.querySelector('.back-btn');
-        if(top){top.href='/pe/';top.innerHTML='<span aria-hidden="true">↔</span><span>Plan de Emergencias</span>';top.setAttribute('aria-label','Abrir Plan de Emergencias');}
-        const foot=d.querySelector('.footer-back');
-        if(foot){foot.href='/pe/';foot.textContent='↔ Abrir Plan de Emergencias';}
-      }catch(e){console.warn('Navegación interna no ajustada',e)}
-    });
-  </script>
+  <iframe src="./app.html" title="Aplicación Plan de Emergencias" loading="eager"></iframe>
 </body>
 </html>
