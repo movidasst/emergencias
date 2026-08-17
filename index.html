@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <meta name="description" content="Centro de Inteligencia Situacional SST para Venezuela de La Movida de SST Plus: señales, impacto preventivo, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_VE">
@@ -41,7 +44,7 @@
       <a href="/pe/">📋 <span class="label-long">Plan de </span><span>Emergencias</span></a>
     </nav>
   </header>
-  <iframe id="moduleFrame" src="/monitor/" title="Centro de Inteligencia Situacional SST Venezuela" loading="eager"></iframe>
+  <iframe id="moduleFrame" src="/monitor/?v=20260817-1727" title="Centro de Inteligencia Situacional SST Venezuela" loading="eager"></iframe>
   <script>
     const frame=document.getElementById('moduleFrame');
     frame.addEventListener('load',()=>{
@@ -51,7 +54,16 @@
         if(top){top.href='/pe/';top.innerHTML='<span aria-hidden="true">↔</span><span>Plan de Emergencias</span>';top.setAttribute('aria-label','Abrir Plan de Emergencias');}
         const foot=d.querySelector('.footer-back');
         if(foot){foot.href='/pe/';foot.textContent='↔ Abrir Plan de Emergencias';}
-      }catch(e){console.warn('Navegación interna no ajustada',e)}
+
+        // Hotfix con URL versionada: evita que Chrome móvil reutilice la semántica anterior.
+        if(!d.querySelector('script[data-semantic-v2="1"]')){
+          const s=d.createElement('script');
+          s.src='/monitor/signal-semantics-v2.js?v=20260817-1727';
+          s.dataset.semanticV2='1';
+          s.async=false;
+          d.body.appendChild(s);
+        }
+      }catch(e){console.warn('Navegación/semántica interna no ajustada',e)}
     });
   </script>
 </body>
