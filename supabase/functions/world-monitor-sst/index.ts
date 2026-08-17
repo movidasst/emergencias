@@ -17,6 +17,18 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 120;
 const requestBuckets = new Map<string, { count: number; resetAt: number }>();
 
+const AIR_CITIES = [
+  ['Caracas','Venezuela',10.4806,-66.9036],['Maracaibo','Venezuela',10.6427,-71.6125],
+  ['Santiago','Chile',-33.4489,-70.6693],['Bogotá','Colombia',4.7110,-74.0721],
+  ['Lima','Perú',-12.0464,-77.0428],['Quito','Ecuador',-0.1807,-78.4678],
+  ['Buenos Aires','Argentina',-34.6037,-58.3816],['São Paulo','Brasil',-23.5505,-46.6333],
+  ['Ciudad de México','México',19.4326,-99.1332],['Miami','EE. UU.',25.7617,-80.1918],
+  ['Nueva York','EE. UU.',40.7128,-74.0060],['Madrid','España',40.4168,-3.7038],
+  ['Londres','Reino Unido',51.5072,-0.1276],['París','Francia',48.8566,2.3522],
+  ['Johannesburgo','Sudáfrica',-26.2041,28.0473],['Delhi','India',28.6139,77.2090],
+  ['Pekín','China',39.9042,116.4074],['Tokio','Japón',35.6762,139.6503]
+] as const;
+
 function cors(origin: string) {
   return {
     'Access-Control-Allow-Origin': origin,
@@ -40,11 +52,7 @@ function json(body: unknown, status: number, origin: string, extra: Record<strin
 }
 
 function clientIp(req: Request) {
-  return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
-    req.headers.get('cf-connecting-ip') ||
-    'unknown'
-  );
+  return req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('cf-connecting-ip') || 'unknown';
 }
 
 function rateLimited(ip: string) {
@@ -58,136 +66,182 @@ function rateLimited(ip: string) {
   return bucket.count > MAX_REQUESTS_PER_WINDOW;
 }
 
-async function fetchWorldMonitor(path: string, apiKey?: string) {
+async function fetchJson(url: string, headers: Record<string,string> = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
-    const headers: Record<string, string> = {
-      Accept: 'application/json',
-      'User-Agent': 'La-Movida-SST-Monitor/1.0',
-    };
-    if (apiKey) headers['X-WorldMonitor-Key'] = apiKey;
+    const res = await fetch(url, { headers: { Accept: 'application/json', 'User-Agent': 'La-Movida-SST-Monitor/1.1', ...headers }, signal: controller.signal });
+    if (!res.ok) throw new Error(`HTTP_${res.status}`);
+    return await res.json();
+  } finally { clearTimeout(timeout); }
+}
 
-    const upstream = await fetch(`${WORLD_MONITOR_BASE}${path}`, {
-      method: 'GET',
-      headers,
-      signal: controller.signal,
-    });
-
-    const contentType = upstream.headers.get('content-type') || '';
-    const payload = contentType.includes('application/json')
-      ? await upstream.json()
-      : { raw: await upstream.text() };
-
-    return { upstream, payload };
-  } finally {
-    clearTimeout(timeout);
+function pickArray(payload: any): any[] {
+  if (Array.isArray(payload)) return payload;
+  for (const key of ['events','features','observations','outages','annotations','sensors','data','results','items']) {
+    if (Array.isArray(payload?.[key])) return payload[key];
   }
+  if (payload?.data && typeof payload.data === 'object') return pickArray(payload.data);
+  return [];
+}
+
+function severityFromAqi(aqi: number | null) {
+  if (aqi === null) return 'advisory';
+  if (aqi >= 151) return 'critical';
+  if (aqi >= 101) return 'warning';
+  return 'advisory';
+}
+
+async function worldMonitor(feed: string, apiKey: string) {
+  const endpoint = FEEDS[feed];
+  if (!endpoint) throw new Error('INVALID_FEED');
+  return await fetchJson(`${WORLD_MONITOR_BASE}${endpoint}`, { 'X-WorldMonitor-Key': apiKey });
+}
+
+async function fallbackNatural() {
+  const [eonet, usgs] = await Promise.allSettled([
+    fetchJson('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&limit=100'),
+    fetchJson('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson'),
+  ]);
+  const items: any[] = [];
+
+  if (eonet.status === 'fulfilled') {
+    for (const e of pickArray(eonet.value)) {
+      const g = Array.isArray(e.geometry) ? e.geometry[e.geometry.length - 1] : null;
+      const coords = g?.coordinates || [];
+      const category = e.categories?.[0]?.title || 'Evento natural';
+      items.push({
+        id: `eonet-${e.id}`, title: e.title || category, eventType: category,
+        description: e.description || '', source: 'NASA EONET', url: e.sources?.[0]?.url || e.link || '',
+        latitude: Array.isArray(coords) ? coords[1] : null, longitude: Array.isArray(coords) ? coords[0] : null,
+        severity: /volcano|severe|storm|flood|wildfire/i.test(category) ? 'warning' : 'advisory',
+        timestamp: g?.date || null,
+      });
+    }
+  }
+
+  if (usgs.status === 'fulfilled') {
+    for (const f of pickArray(usgs.value)) {
+      const mag = Number(f?.properties?.mag);
+      const coords = f?.geometry?.coordinates || [];
+      items.push({
+        id: `usgs-${f.id}`, title: `Sismo M${Number.isFinite(mag) ? mag.toFixed(1) : '?'} · ${f?.properties?.place || 'ubicación no indicada'}`,
+        eventType: 'Sismo', description: f?.properties?.title || '', source: 'USGS', url: f?.properties?.url || '',
+        latitude: coords[1] ?? null, longitude: coords[0] ?? null,
+        severity: mag >= 6 ? 'critical' : mag >= 5 ? 'warning' : 'advisory', timestamp: f?.properties?.time || null,
+      });
+    }
+  }
+  return items.slice(0, 150);
+}
+
+async function fallbackOutages() {
+  const until = Math.floor(Date.now() / 1000);
+  const from = until - 48 * 3600;
+  const payload = await fetchJson(`https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?from=${from}&until=${until}&format=codf&limit=100`);
+  return pickArray(payload).map((o: any, i: number) => ({
+    id: `ioda-${o.id || i}-${o.start || ''}`,
+    title: `Interrupción de conectividad · ${o.location_name || o.location || 'zona no indicada'}`,
+    country: o.location_name || '',
+    description: `Señal ${o.datasource || 'IODA'}${o.score != null ? ` · puntuación ${Math.round(Number(o.score))}` : ''}`,
+    source: 'IODA / Georgia Tech',
+    url: o.location ? `https://ioda.inetintel.cc.gatech.edu/${String(o.location).replace('/', '/')}` : 'https://ioda.inetintel.cc.gatech.edu/',
+    severity: Number(o.score) >= 10000 ? 'critical' : Number(o.score) >= 4000 ? 'warning' : 'advisory',
+    timestamp: o.start ? Number(o.start) * 1000 : null,
+  }));
+}
+
+async function fallbackRadiation() {
+  const payload = await fetchJson('https://simplemap.safecast.org/api/sensors');
+  return pickArray(payload).slice(0, 150).map((s: any, i: number) => {
+    const value = Number(s.value ?? s.usvh ?? s.uSv ?? s.cpm ?? s.last_value ?? s.reading);
+    const unit = s.unit || (s.cpm != null ? 'CPM' : '');
+    return {
+      id: `safecast-${s.id || s.sensor_id || i}`,
+      title: `Radiación · ${s.name || s.device_name || s.sensor_name || `sensor ${s.id || i + 1}`}`,
+      country: s.country || s.location_name || '',
+      description: Number.isFinite(value) ? `${value} ${unit}`.trim() : 'Sensor activo Safecast',
+      source: 'Safecast', url: 'https://map.safecast.org/',
+      latitude: s.latitude ?? s.lat ?? null, longitude: s.longitude ?? s.lon ?? s.lng ?? null,
+      severity: 'advisory', timestamp: s.updated_at || s.timestamp || s.last_seen || null,
+    };
+  });
+}
+
+async function fallbackAir() {
+  const lats = AIR_CITIES.map(c => c[2]).join(',');
+  const lons = AIR_CITIES.map(c => c[3]).join(',');
+  const payload = await fetchJson(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${encodeURIComponent(lats)}&longitude=${encodeURIComponent(lons)}&current=us_aqi,european_aqi,pm2_5,pm10&timezone=auto`);
+  const rows = Array.isArray(payload) ? payload : [payload];
+  return rows.map((r: any, i: number) => {
+    const city = AIR_CITIES[i] || [`Punto ${i + 1}`,'',r.latitude,r.longitude];
+    const aqi = Number(r?.current?.us_aqi);
+    const pm25 = Number(r?.current?.pm2_5);
+    const pm10 = Number(r?.current?.pm10);
+    return {
+      id: `openmeteo-air-${i}`, title: `Calidad del aire · ${city[0]}`, country: city[1],
+      description: `AQI US ${Number.isFinite(aqi) ? aqi : '—'} · PM2.5 ${Number.isFinite(pm25) ? pm25 : '—'} µg/m³ · PM10 ${Number.isFinite(pm10) ? pm10 : '—'} µg/m³`,
+      source: 'Open-Meteo / CAMS', url: 'https://open-meteo.com/en/docs/air-quality-api',
+      latitude: Number(r.latitude ?? city[2]), longitude: Number(r.longitude ?? city[3]),
+      severity: severityFromAqi(Number.isFinite(aqi) ? aqi : null), timestamp: r?.current?.time || null,
+    };
+  });
+}
+
+async function fallback(feed: string) {
+  if (feed === 'natural') return fallbackNatural();
+  if (feed === 'outages') return fallbackOutages();
+  if (feed === 'radiation') return fallbackRadiation();
+  if (feed === 'air') return fallbackAir();
+  throw new Error('INVALID_FEED');
 }
 
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
-
   if (!ALLOWED_ORIGINS.has(origin)) {
-    return new Response(JSON.stringify({ error: 'ORIGIN_NOT_ALLOWED' }), {
-      status: 403,
-      headers: { 'Content-Type': 'application/json; charset=utf-8', Vary: 'Origin' },
-    });
+    return new Response(JSON.stringify({ error: 'ORIGIN_NOT_ALLOWED' }), { status: 403, headers: { 'Content-Type': 'application/json; charset=utf-8', Vary: 'Origin' } });
   }
-
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: cors(origin) });
-  }
-
-  if (req.method !== 'GET') {
-    return json({ error: 'METHOD_NOT_ALLOWED' }, 405, origin, { Allow: 'GET, OPTIONS' });
-  }
-
-  const ip = clientIp(req);
-  if (rateLimited(ip)) {
-    return json({ error: 'RATE_LIMITED' }, 429, origin, { 'Retry-After': '60' });
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors(origin) });
+  if (req.method !== 'GET') return json({ error: 'METHOD_NOT_ALLOWED' }, 405, origin, { Allow: 'GET, OPTIONS' });
+  if (rateLimited(clientIp(req))) return json({ error: 'RATE_LIMITED' }, 429, origin, { 'Retry-After': '60' });
 
   const url = new URL(req.url);
   const feed = url.searchParams.get('feed') || 'natural';
 
-  // World Monitor documents /api/health as a public endpoint. This gives us a
-  // safe connectivity/freshness diagnostic without bypassing API-key gating.
   if (feed === 'health') {
-    try {
-      const { upstream, payload } = await fetchWorldMonitor('/api/health?compact=1');
-      if (!upstream.ok) {
-        return json(
-          { error: 'WORLD_MONITOR_HEALTH_UNAVAILABLE', upstream_status: upstream.status },
-          upstream.status >= 500 ? 502 : upstream.status,
-          origin,
-        );
-      }
-      return json(
-        {
-          feed: 'health',
-          fetched_at: new Date().toISOString(),
-          source: 'World Monitor',
-          data: payload,
-        },
-        200,
-        origin,
-        { 'Cache-Control': 'no-store', 'X-Data-Source': 'World Monitor' },
-      );
-    } catch (error) {
-      const isAbort = error instanceof DOMException && error.name === 'AbortError';
-      console.error('World Monitor health failure', error);
-      return json({ error: isAbort ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE' }, 502, origin);
-    }
+    let wm: any = null;
+    try { wm = await fetchJson(`${WORLD_MONITOR_BASE}/api/health?compact=1`); } catch { wm = null; }
+    return json({
+      feed: 'health', fetched_at: new Date().toISOString(),
+      world_monitor_reachable: Boolean(wm), world_monitor_api_key_configured: Boolean(Deno.env.get('WORLD_MONITOR_API_KEY')),
+      fallback_mode: true, data: wm,
+    }, 200, origin, { 'Cache-Control': 'no-store' });
   }
 
-  const endpoint = FEEDS[feed];
-  if (!endpoint) {
-    return json({ error: 'INVALID_FEED', allowed: [...Object.keys(FEEDS), 'health'] }, 400, origin);
-  }
+  if (!FEEDS[feed]) return json({ error: 'INVALID_FEED', allowed: [...Object.keys(FEEDS), 'health'] }, 400, origin);
 
   const apiKey = Deno.env.get('WORLD_MONITOR_API_KEY');
-  if (!apiKey) {
-    return json(
-      {
-        error: 'WORLD_MONITOR_API_KEY_NOT_CONFIGURED',
-        provider: 'World Monitor',
-        required_secret: 'WORLD_MONITOR_API_KEY',
-      },
-      503,
-      origin,
-    );
+  if (apiKey) {
+    try {
+      const payload = await worldMonitor(feed, apiKey);
+      return json({ feed, fetched_at: new Date().toISOString(), source: 'World Monitor', provider_mode: 'world-monitor', data: payload }, 200, origin, {
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120', 'X-Data-Source': 'World Monitor'
+      });
+    } catch (error) {
+      console.error('World Monitor unavailable; using public fallback', error);
+    }
   }
 
   try {
-    const { upstream, payload } = await fetchWorldMonitor(endpoint, apiKey);
-
-    if (!upstream.ok) {
-      console.error('World Monitor upstream error', upstream.status, payload);
-      return json(
-        { error: 'UPSTREAM_ERROR', upstream_status: upstream.status },
-        upstream.status >= 500 ? 502 : upstream.status,
-        origin,
-      );
-    }
-
-    return json(
-      {
-        feed,
-        fetched_at: new Date().toISOString(),
-        source: 'World Monitor',
-        data: payload,
-      },
-      200,
-      origin,
-      {
-        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=120',
-        'X-Data-Source': 'World Monitor',
-      },
-    );
+    const items = await fallback(feed);
+    return json({
+      feed, fetched_at: new Date().toISOString(), source: 'Public data sources', provider_mode: 'public-fallback',
+      world_monitor_enrichment: apiKey ? 'temporarily-unavailable' : 'not-configured', data: items,
+    }, 200, origin, {
+      'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300', 'X-Data-Source': 'Public fallback'
+    });
   } catch (error) {
-    const isAbort = error instanceof DOMException && error.name === 'AbortError';
-    console.error('World Monitor proxy failure', error);
-    return json({ error: isAbort ? 'UPSTREAM_TIMEOUT' : 'UPSTREAM_UNAVAILABLE' }, 502, origin);
+    console.error('Fallback provider failure', feed, error);
+    return json({ error: 'DATA_SOURCE_UNAVAILABLE', feed }, 502, origin);
   }
 });
