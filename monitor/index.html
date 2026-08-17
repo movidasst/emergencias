@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional e impacto potencial sobre trabajadores, instalaciones, servicios y continuidad.">
+  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional, radiación UV, calidad del aire, ambiente e impacto potencial sobre trabajadores, instalaciones, servicios y continuidad.">
   <meta property="og:title" content="Monitor SST Venezuela | La Movida de SST Plus">
-  <meta property="og:description" content="Venezuela primero: señales, impacto potencial y acciones preventivas para SST, emergencias y continuidad operacional.">
+  <meta property="og:description" content="Venezuela primero: señales, radiación UV, exposición ambiental, impacto potencial y acciones preventivas para SST, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://emergencias.movidasst.com/monitor/">
   <title>Monitor SST Venezuela | La Movida de SST Plus</title>
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./impact.css">
+  <link rel="stylesheet" href="./environment.css">
 </head>
 <body>
   <div class="top-line"></div>
@@ -103,8 +104,8 @@
       <nav class="feed-tabs" aria-label="Fuentes de monitoreo">
         <button class="feed-tab active" data-feed="natural" type="button"><span>🌎</span><b>Naturales</b><small>Sismos, incendios, tormentas…</small></button>
         <button class="feed-tab" data-feed="outages" type="button"><span>🌐</span><b>Conectividad</b><small>Interrupciones y degradación</small></button>
-        <button class="feed-tab" data-feed="radiation" type="button"><span>☢️</span><b>Radiación</b><small>Observaciones disponibles</small></button>
-        <button class="feed-tab" data-feed="air" type="button"><span>🌬️</span><b>Ambiente</b><small>AQI y material particulado</small></button>
+        <button class="feed-tab" data-feed="radiation" type="button"><span>☢️</span><b>Radiación</b><small>Ionizante · Safecast</small></button>
+        <button class="feed-tab" data-feed="air" type="button"><span>☀️</span><b>Exposición</b><small>UV, aire, calor, viento y lluvia</small></button>
       </nav>
     </section>
 
@@ -201,12 +202,13 @@
   <footer>
     <a class="footer-back" href="https://emergencias.movidasst.com/">← Volver al Gestor de Emergencias</a>
     <strong>La Movida de SST Plus</strong> · www.movidasst.com · De la Reacción a la Prevención<br>
-    <small>Fuentes abiertas y enriquecimiento opcional de World Monitor. Cada proveedor conserva sus condiciones de uso y atribución.</small>
+    <small>Fuentes abiertas y enriquecimiento opcional de World Monitor. Ambiente: Open-Meteo/CAMS y pronóstico meteorológico. Cada proveedor conserva sus condiciones de uso y atribución.</small>
   </footer>
 
   <div class="toast" id="toast" role="status"></div>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="./app.js"></script>
+  <script src="./environment-ui.js"></script>
 </body>
 </html>
