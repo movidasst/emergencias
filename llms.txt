@@ -1,0 +1,27 @@
+# Emergencias SST Venezuela · La Movida de SST Plus
+
+> Centro web gratuito de inteligencia situacional y planificación de emergencias para profesionales de seguridad y salud en el trabajo en Venezuela.
+
+URL canónica: https://emergencias.movidasst.com/
+Autor: David Linares Brea
+Organización: La Movida de SST Plus
+Contacto: info@movidasst.com
+Idioma: español
+
+## Módulos
+
+- Monitor SST Venezuela: https://emergencias.movidasst.com/monitor/
+- Aplicación Plan de Emergencias: https://emergencias.movidasst.com/pe/
+
+## Monitor SST Venezuela
+
+Presenta señales naturales, conectividad, radiación y exposición ambiental. Su lectura de impacto potencial ayuda a priorizar verificaciones sobre trabajadores, instalaciones, movilidad, servicios y continuidad. No sustituye fuentes oficiales ni confirma daños.
+
+## Plan de Emergencias
+
+Guía la identificación de amenazas, exposición, vulnerabilidades, capacidades, escenarios y brechas para construir un Plan de Emergencias con trazabilidad preventiva.
+
+## Recursos relacionados
+
+- Sitio principal: https://www.movidasst.com/
+- Canal de WhatsApp: https://whatsapp.com/channel/0029Va0mlH5Jf05mrcCz8r3e

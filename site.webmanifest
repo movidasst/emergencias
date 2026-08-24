@@ -1,0 +1,19 @@
+{
+  "name": "Emergencias SST Venezuela · La Movida SST Plus",
+  "short_name": "Emergencias SST",
+  "description": "Monitoreo situacional y aplicación para construir el Plan de Emergencias.",
+  "lang": "es-VE",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#007b85",
+  "icons": [
+    {
+      "src": "/logo-movida-sst-plus.png",
+      "sizes": "600x600",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
