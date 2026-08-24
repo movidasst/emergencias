@@ -4,12 +4,49 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Monitor SST Venezuela de La Movida de SST Plus: inteligencia situacional, radiación UV, calidad del aire, ambiente e impacto potencial sobre trabajadores, instalaciones, servicios y continuidad.">
+  <meta name="description" content="Monitor gratuito SST Venezuela: sismos, incendios, conectividad, radiación, calidad del aire, calor, viento y lluvia con lectura de impacto preventivo.">
+  <meta name="author" content="David Linares Brea">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
   <meta property="og:title" content="Monitor SST Venezuela | La Movida de SST Plus">
   <meta property="og:description" content="Venezuela primero: señales, radiación UV, exposición ambiental, impacto potencial y acciones preventivas para SST, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
+  <meta property="og:locale" content="es_VE">
+  <meta property="og:site_name" content="La Movida de SST Plus">
   <meta property="og:url" content="https://emergencias.movidasst.com/monitor/">
-  <title>Monitor SST Venezuela | La Movida de SST Plus</title>
+  <meta property="og:image" content="https://emergencias.movidasst.com/og-emergencias-sst.png">
+  <meta property="og:image:secure_url" content="https://emergencias.movidasst.com/og-emergencias-sst.png">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Monitor de Emergencias SST Venezuela · La Movida de SST Plus">
+  <link rel="canonical" href="https://emergencias.movidasst.com/monitor/">
+  <link rel="icon" type="image/png" href="/logo-movida-sst-plus.png">
+  <link rel="apple-touch-icon" href="/logo-movida-sst-plus.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Monitoreo de Emergencias SST Venezuela">
+  <meta name="twitter:description" content="Señales naturales, conectividad, radiación y exposición ambiental con lectura preventiva para Venezuela.">
+  <meta name="twitter:image" content="https://emergencias.movidasst.com/og-emergencias-sst.png">
+  <title>Monitoreo de Emergencias SST Venezuela | La Movida</title>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "@id": "https://emergencias.movidasst.com/monitor/#application",
+    "url": "https://emergencias.movidasst.com/monitor/",
+    "name": "Monitor de Emergencias SST Venezuela",
+    "description": "Monitor gratuito de señales naturales, conectividad, radiación y exposición ambiental con lectura de impacto potencial para la seguridad y salud en el trabajo.",
+    "applicationCategory": "SafetyApplication",
+    "operatingSystem": "Any",
+    "isAccessibleForFree": true,
+    "inLanguage": "es-VE",
+    "spatialCoverage": {"@type": "Country", "name": "Venezuela"},
+    "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+    "author": {"@type": "Person", "name": "David Linares Brea", "url": "https://davidlinares.movidasst.com/"},
+    "publisher": {"@id": "https://www.movidasst.com/#organization"},
+    "isPartOf": {"@id": "https://emergencias.movidasst.com/#website"}
+  }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -17,6 +54,11 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./impact.css">
   <link rel="stylesheet" href="./environment.css">
+  <style>
+    .monitor-brandline{display:flex;align-items:flex-start;gap:12px}
+    .official-logo{width:58px;height:58px;flex:0 0 58px;display:block;padding:3px;border-radius:50%;background:#fff;object-fit:contain;box-shadow:0 8px 24px rgba(0,32,91,.14)}
+    @media(max-width:560px){.monitor-brandline{gap:9px}.official-logo{width:46px;height:46px;flex-basis:46px}}
+  </style>
 </head>
 <body>
   <div class="top-line"></div>
@@ -27,10 +69,13 @@
         <span aria-hidden="true">←</span>
         <span>Emergencias</span>
       </a>
-      <div>
-        <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
-        <h1>Monitor SST <span>Venezuela</span></h1>
-        <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
+      <div class="monitor-brandline">
+        <img class="official-logo" src="/logo-movida-sst-plus.png" width="600" height="600" alt="Logo oficial de La Movida de SST Plus" decoding="async" fetchpriority="high">
+        <div>
+          <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
+          <h1>Monitor SST <span>Venezuela</span></h1>
+          <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
+        </div>
       </div>
     </div>
 
