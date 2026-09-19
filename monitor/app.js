@@ -242,6 +242,64 @@ function proximityLabel(x){
   return isVenezuelaFocus(x)?'Venezuela / entorno':'Contexto regional';
 }
 
+function gdrThreatCode(x){
+  const kind=eventKind(x);
+  const s=[x.title,x.desc].join(' ').toLowerCase();
+  if(kind==='earthquake')return'SISMO';
+  if(kind==='flood')return'INUNDACION';
+  if(kind==='landslide')return'DESLIZAMIENTO';
+  if(kind==='outage')return'FALLA_TELECOMUNICACIONES';
+  if(kind==='storm'){
+    if(/tormenta el[eé]ctrica|lightning|thunderstorm|rayos?/.test(s))return'TORMENTA_ELECTRICA';
+    if(/lluvia intensa|heavy rain|precipitaci[oó]n intensa/.test(s))return'LLUVIA_INTENSA';
+    if(/vientos? fuertes?|strong wind|high wind|wind gust/.test(s))return'VIENTOS_FUERTES';
+  }
+  return'';
+}
+
+function gdrObservedDate(x){
+  const raw=x?.raw||{};
+  const v=first(raw.timestamp,raw.date,raw.occurredAt,raw.updatedAt,raw.startedAt,raw.time);
+  if(!v)return'';
+  const d=new Date(typeof v==='number'&&v<1e12?v*1000:v);
+  return Number.isNaN(d.getTime())?'':d.toISOString().slice(0,10);
+}
+
+function gdrSourceType(x){
+  const s=String(x?.source||'').toLowerCase();
+  if(/usgs|nasa|noaa|gdacs|onu|comisi[oó]n europea|safecast|georgia tech|ioda/.test(s))return'AUTORIDAD';
+  return'DOCUMENTO_TECNICO';
+}
+
+function buildGdrUrl(x){
+  if(x?.lat===null||x?.lon===null||!Number.isFinite(Number(x?.lat))||!Number.isFinite(Number(x?.lon)))return'';
+  const url=new URL('https://gdr.movidasst.com/');
+  const threatCode=gdrThreatCode(x);
+  const intensity=x.severity==='critical'?'ALTA':x.severity==='warning'?'MEDIA':'BAJA';
+  const technical=[
+    String(x.desc||'').slice(0,650),
+    x.source?`Fuente de monitoreo: ${x.source}`:'',
+    x.time?`Fecha/hora mostrada por el Monitor: ${x.time}`:'',
+    x.url?`Fuente original: ${x.url}`:'',
+    'Señal transferida desde el Monitor SST de La Movida. Debe verificarse la exposición, la ubicación y la categoría antes de publicarla en GDR.'
+  ].filter(Boolean).join('\n');
+
+  url.searchParams.set('accion','registrar');
+  url.searchParams.set('origen','monitor-sst');
+  url.searchParams.set('tipo','AMENAZA');
+  url.searchParams.set('lat',String(Number(x.lat).toFixed(6)));
+  url.searchParams.set('lng',String(Number(x.lon).toFixed(6)));
+  url.searchParams.set('titulo',String(x.title||'Señal del Monitor SST').slice(0,120));
+  url.searchParams.set('descripcion',technical.slice(0,1450));
+  url.searchParams.set('estado_temporal','ACTIVA');
+  url.searchParams.set('intensidad',intensity);
+  url.searchParams.set('fuente_tipo',gdrSourceType(x));
+  const date=gdrObservedDate(x);
+  if(date)url.searchParams.set('fecha',date);
+  if(threatCode)url.searchParams.set('amenaza_codigo',threatCode);
+  return url.toString();
+}
+
 function renderImpactDetail(x){
   const box=$('#impactDetail');
   if(!box)return;
@@ -269,6 +327,7 @@ function renderImpactDetail(x){
       <b>Qué revisar ahora</b>
       <ul>${m.actions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>
     </div>
+    ${buildGdrUrl(x)?`<a class="gdr-action" href="${esc(buildGdrUrl(x))}" target="_blank" rel="noopener">🗺️ Registrar / analizar esta amenaza en GDR ↗</a>`:'' }
     ${x.url?`<a class="impact-source" href="${esc(x.url)}" target="_blank" rel="noopener">Ver fuente original ↗</a>`:''}
   `;
 }
