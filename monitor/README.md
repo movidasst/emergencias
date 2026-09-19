@@ -1,6 +1,6 @@
 # Monitor SST — La Movida de SST Plus
 
-Interfaz mobile-first de inteligencia situacional SST inspirada en la arquitectura de World Monitor y conectada a fuentes públicas verificables.
+Interfaz mobile-first de inteligencia situacional SST para Venezuela, Latinoamérica y contexto mundial.
 
 ## Arquitectura
 
@@ -8,60 +8,72 @@ Interfaz mobile-first de inteligencia situacional SST inspirada en la arquitectu
 emergencias.movidasst.com/monitor/
         │
         ▼
-Supabase Edge Function: world-monitor-sst
+Supabase Edge Function: world-monitor-sst   ← slug heredado
         │
-        ├── Si existe WORLD_MONITOR_API_KEY → World Monitor REST API
+        ├── Fuentes directas (primarias)
+        │     ├── NASA EONET
+        │     ├── USGS
+        │     ├── NASA FIRMS / VIIRS
+        │     ├── GDACS
+        │     ├── NOAA / NHC
+        │     ├── NOAA Tsunami
+        │     ├── IODA / Georgia Tech
+        │     ├── Safecast
+        │     ├── Open-Meteo / CAMS
+        │     └── NOAA SWPC
         │
-        └── Sin clave / si falla → fuentes públicas directas
-              ├── NASA EONET + USGS
-              ├── IODA / Georgia Tech
-              ├── Safecast
-              └── Open-Meteo / CAMS
+        └── OSIRIS Intelligence (respaldo automático)
+              ├── /api/earthquakes
+              ├── /api/fires
+              ├── /api/weather
+              ├── /api/radar
+              └── /api/space-weather
 ```
 
-La aplicación funciona **sin una clave de World Monitor**. Una clave `wm_live_...` es únicamente una capa opcional de enriquecimiento y, si se configura, permanece siempre en el servidor.
+La aplicación **prioriza siempre las fuentes directas**. OSIRIS no es la fuente principal ni una dependencia única: se usa únicamente como capa de redundancia cuando una familia de datos directos falla o devuelve información vacía.
 
-## Fuentes integradas
+## Capas visibles
 
-### Modo World Monitor opcional
+- Eventos naturales: sismos, incendios/anomalías térmicas, tormentas, volcanes, inundaciones, ciclones, tsunami y alertas GDACS.
+- Conectividad: IODA / Georgia Tech.
+- Radiación ionizante: Safecast.
+- Exposición ambiental: UV, AQI, PM2.5, PM10, ozono, polvo, temperatura, sensación térmica, humedad, lluvia y viento.
+- Clima espacial: NOAA SWPC, activado progresivamente desde el backend.
 
-- `natural` → `/api/natural/v1/list-natural-events`
-- `outages` → `/api/infrastructure/v1/list-internet-outages`
-- `radiation` → `/api/radiation/v1/list-radiation-observations`
-- `air` → `/api/climate/v1/list-air-quality-data`
+## Fuentes contextuales
 
-### Modo público automático
-
-- Eventos naturales: NASA EONET + USGS.
-- Conectividad: IODA, Georgia Tech.
-- Radiación: Safecast.
-- Calidad del aire: Open-Meteo / Copernicus CAMS.
-
-## World Monitor PRO (opcional)
-
-Si en el futuro se dispone de una clave de World Monitor, crear en Supabase Edge Functions el secreto:
-
-- Nombre: `WORLD_MONITOR_API_KEY`
-- Valor: `wm_live_...`
-
-Nunca guardar esa clave en HTML, JavaScript, GitHub, issues ni commits. La Edge Function detecta automáticamente el secreto y prioriza World Monitor; ante fallo vuelve a las fuentes públicas.
-
-## Seguridad aplicada
-
-- Proxy de solo lectura (`GET` / `OPTIONS`).
-- Rutas upstream en lista cerrada; el cliente no puede convertirlo en proxy arbitrario.
-- CORS restringido a `https://emergencias.movidasst.com` y localhost de desarrollo.
-- Ninguna credencial se expone al navegador.
-- Timeout de 12 segundos.
-- Límite defensivo por IP en la instancia Edge.
-- Caché HTTP corta para reducir consultas repetidas.
-- Sin `service_role`, sin cambios de tablas y sin migraciones.
-- Degradación automática: World Monitor → fuentes públicas.
+- OpenAQ: mediciones ambientales observadas cuando existe cobertura y API configurada.
+- OCHA HDX HAPI: contexto territorial.
+- OpenStreetMap / Overpass: infraestructura y servicios cercanos.
 
 ## Criterio SST
 
-Una señal externa no equivale por sí sola a un riesgo ocupacional. Debe interpretarse considerando exposición, población trabajadora potencialmente afectada, vulnerabilidad, controles existentes, continuidad operacional y confirmación por fuentes oficiales locales.
+Una señal externa no equivale por sí sola a un riesgo ocupacional ni a daño confirmado. El monitor ayuda a priorizar verificaciones considerando:
+
+1. ubicación y proximidad;
+2. severidad de la señal;
+3. posible exposición de trabajadores;
+4. instalaciones y rutas;
+5. servicios y comunicaciones;
+6. continuidad operacional.
+
+La capa **Impacto Venezuela** es una priorización preventiva, no un conteo de personas afectadas ni una predicción de daño.
+
+## Seguridad
+
+- Edge Function de solo lectura (`GET` / `OPTIONS`).
+- Orígenes web permitidos en lista cerrada.
+- Sin `service_role` en el navegador.
+- Timeout en consultas externas.
+- Límite defensivo por IP.
+- Caché HTTP corta.
+- Degradación por proveedor: fuente directa → OSIRIS cuando corresponde.
+- Ninguna credencial de proveedor se guarda en HTML o JavaScript público.
+
+## OSIRIS
+
+OSIRIS Intelligence expone endpoints públicos normalizados y sin API key para varias fuentes de interés. En este proyecto se aprovecha solamente como **respaldo de continuidad del dato**; no se integran sus funciones OSINT de personas, RECON, cripto, escaneo ni otras áreas ajenas al propósito de SST y emergencias.
 
 ## Licencia y atribución
 
-El repositorio mantiene AGPL-3.0. World Monitor distribuye su código bajo AGPL-3.0-only. Cada dato conserva la identificación de su fuente; las condiciones de uso de cada proveedor siguen siendo aplicables.
+El repositorio de La Movida mantiene su licencia AGPL-3.0. OSIRIS se distribuye bajo licencia MIT. Cada dato conserva su proveedor/fuente y las condiciones de uso de los proveedores externos siguen siendo aplicables.
