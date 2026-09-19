@@ -158,7 +158,7 @@
       <a href="/pe/">📋 <span class="label-long">Plan de </span><span>Emergencias</span></a>
     </nav>
   </header>
-  <iframe id="moduleFrame" src="/monitor/?v=20260817-1727" title="Centro de Inteligencia Situacional SST Venezuela" loading="eager"></iframe>
+  <iframe id="moduleFrame" src="/monitor/?v=20260919-r5" title="Centro de Inteligencia Situacional SST Venezuela" loading="eager"></iframe>
   <script>
     const frame=document.getElementById('moduleFrame');
     frame.addEventListener('load',()=>{
@@ -172,7 +172,7 @@
         // Hotfix con URL versionada: evita que Chrome móvil reutilice la semántica anterior.
         if(!d.querySelector('script[data-semantic-v2="1"]')){
           const s=d.createElement('script');
-          s.src='/monitor/signal-semantics-v2.js?v=20260817-1727';
+          s.src='/monitor/signal-semantics-v2.js?v=20260919-r5';
           s.dataset.semanticV2='1';
           s.async=false;
           d.body.appendChild(s);
