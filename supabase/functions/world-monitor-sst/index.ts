@@ -8,6 +8,11 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 120;
 const requestBuckets = new Map<string, { count: number; resetAt: number }>();
 
+// OSIRIS se usa únicamente como capa de redundancia. Las fuentes oficiales/directas
+// siguen siendo la primera opción; si una de ellas no responde, OSIRIS puede
+// normalizar la misma familia de datos sin convertirse en una dependencia única.
+const OSIRIS_BASE = 'https://osirisai.live/api';
+
 const AIR_CITIES = [
   ['Caracas','Venezuela',10.4806,-66.9036],['Maracaibo','Venezuela',10.6427,-71.6125],
   ['Valencia','Venezuela',10.1620,-68.0077],['Maracay','Venezuela',10.2469,-67.5958],
@@ -94,14 +99,14 @@ async function fetchJson(url: string, headers: Record<string,string> = {}) {
   }
 }
 
-async function fetchText(url: string) {
+async function fetchText(url: string, accept = 'text/plain') {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   try {
     const res = await fetch(url, {
       headers: {
-        Accept: 'text/csv',
-        'User-Agent': 'La-Movida-SST-Monitor/2.0'
+        Accept: accept,
+        'User-Agent': 'La-Movida-SST-Monitor/3.0'
       },
       signal: controller.signal
     });
@@ -216,7 +221,7 @@ async function fallbackFirms() {
   const settled = await Promise.allSettled(
     FIRMS_SOURCES.map(async ([source, label]) => {
       const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(key)}/${source}/${FIRMS_BBOX}/1`;
-      const csv = await fetchText(url);
+      const csv = await fetchText(url, 'text/csv');
       return parseCsv(csv).map((row, i) => {
         const lat = finite(row.latitude);
         const lon = finite(row.longitude);
@@ -280,11 +285,151 @@ async function fallbackFirms() {
     .slice(0, 200);
 }
 
+
+function osirisSeverity(v: unknown) {
+  const s = String(v ?? '').toLowerCase();
+  if (/critical|extreme|severe|high|red|danger/.test(s)) return 'critical';
+  if (/warning|watch|medium|moderate|orange|yellow|elevated/.test(s)) return 'warning';
+  return 'advisory';
+}
+
+function normalizeOsirisEarthquakes(payload: any) {
+  return pickArray(payload?.earthquakes ?? payload).slice(0, 250).map((q: any, i: number) => {
+    const mag = finite(q.magnitude ?? q.mag);
+    return {
+      id: `osiris-eq-${q.id || i}`,
+      title: `Sismo M${mag !== null ? mag.toFixed(1) : '?'} · ${q.place || 'ubicación no indicada'}`,
+      eventType: 'Sismo',
+      description: [
+        q.depth != null ? `Profundidad ${q.depth} km` : '',
+        q.tsunami ? 'Indicador tsunami USGS activo' : '',
+      ].filter(Boolean).join(' · '),
+      source: 'OSIRIS · USGS',
+      url: q.url || 'https://osirisai.live/docs',
+      latitude: finite(q.lat ?? q.latitude),
+      longitude: finite(q.lng ?? q.lon ?? q.longitude),
+      severity: mag !== null && mag >= 6 ? 'critical' : mag !== null && mag >= 5 ? 'warning' : osirisSeverity(q.alert),
+      timestamp: q.time ?? payload?.timestamp ?? null,
+      note: 'Respaldo OSIRIS de datos sísmicos USGS. Confirmar siempre con la fuente oficial aplicable.'
+    };
+  });
+}
+
+function normalizeOsirisFires(payload: any) {
+  return pickArray(payload?.fires ?? payload).slice(0, 300).map((f: any, i: number) => {
+    const frp = finite(f.frp);
+    const conf = String(f.confidence ?? '').toLowerCase();
+    const date = String(f.date || '').trim();
+    const rawTime = String(f.time || '').padStart(4, '0');
+    const timestamp = date
+      ? `${date}T${rawTime.slice(0,2) || '00'}:${rawTime.slice(2,4) || '00'}:00Z`
+      : payload?.timestamp ?? null;
+    return {
+      id: `osiris-fire-${i}-${f.lat ?? f.latitude}-${f.lng ?? f.longitude}`,
+      title: f.title || `Foco térmico satelital${frp !== null ? ` · ${frp.toFixed(1)} MW` : ''}`,
+      eventType: String(f.type || '').toLowerCase() === 'volcano' ? 'Volcán' : 'Incendio / anomalía térmica',
+      description: [
+        conf ? `confianza ${conf}` : '',
+        frp !== null ? `FRP ${frp.toFixed(1)} MW` : '',
+        finite(f.brightness) !== null ? `brillo ${finite(f.brightness)?.toFixed(1)}` : '',
+      ].filter(Boolean).join(' · '),
+      source: 'OSIRIS · NASA FIRMS',
+      url: 'https://osirisai.live/docs',
+      latitude: finite(f.lat ?? f.latitude),
+      longitude: finite(f.lng ?? f.lon ?? f.longitude),
+      severity: frp !== null && frp >= 50 ? 'critical' : (conf === 'high' || conf === 'h' || (frp !== null && frp >= 15)) ? 'warning' : 'advisory',
+      timestamp,
+      note: 'Respaldo OSIRIS de NASA FIRMS. Un foco térmico no confirma por sí solo afectación ocupacional.'
+    };
+  });
+}
+
+function normalizeOsirisWeather(payload: any) {
+  return pickArray(payload?.events ?? payload).slice(0, 220).map((w: any, i: number) => ({
+    id: `osiris-weather-${w.id || i}`,
+    title: w.title || w.type || w.category || 'Evento meteorológico',
+    eventType: w.type || w.category || 'Evento meteorológico',
+    country: w.area || '',
+    description: [w.category, w.expires ? `Vigente hasta ${w.expires}` : ''].filter(Boolean).join(' · '),
+    source: `OSIRIS · ${w.provider || 'fuente meteorológica'}`,
+    url: /^https?:\/\//i.test(String(w.source || '')) ? w.source : 'https://osirisai.live/docs',
+    latitude: finite(w.lat ?? w.latitude),
+    longitude: finite(w.lng ?? w.lon ?? w.longitude),
+    severity: osirisSeverity(w.severity),
+    timestamp: w.date ?? payload?.timestamp ?? null,
+    note: 'Respaldo OSIRIS para eventos meteorológicos. Validar con las autoridades y servicios oficiales del territorio.'
+  }));
+}
+
+async function osirisNaturalFallback(needs: { earthquakes: boolean; fires: boolean; weather: boolean }) {
+  const jobs: Promise<any[]>[] = [];
+  if (needs.earthquakes) jobs.push(fetchJson(`${OSIRIS_BASE}/earthquakes`).then(normalizeOsirisEarthquakes));
+  if (needs.fires) jobs.push(fetchJson(`${OSIRIS_BASE}/fires`).then(normalizeOsirisFires));
+  if (needs.weather) jobs.push(fetchJson(`${OSIRIS_BASE}/weather`).then(normalizeOsirisWeather));
+  if (!jobs.length) return [];
+  const settled = await Promise.allSettled(jobs);
+  return settled
+    .filter((r): r is PromiseFulfilledResult<any[]> => r.status === 'fulfilled')
+    .flatMap(r => r.value);
+}
+
+function normalizeOsirisOutages(payload: any) {
+  return pickArray(payload?.outages ?? payload).slice(0, 150).map((o: any, i: number) => ({
+    id: `osiris-ioda-${o.id || o.code || i}-${o.from || ''}`,
+    title: `Interrupción de conectividad · ${o.country || o.code || 'zona no indicada'}`,
+    country: o.country || o.code || '',
+    description: [
+      o.datasource ? `Señal ${o.datasource}` : 'Señal IODA',
+      o.score != null ? `puntuación ${Math.round(Number(o.score))}` : ''
+    ].filter(Boolean).join(' · '),
+    source: 'OSIRIS · IODA / Georgia Tech',
+    url: 'https://osirisai.live/docs',
+    latitude: finite(o.lat ?? o.latitude),
+    longitude: finite(o.lng ?? o.lon ?? o.longitude),
+    severity: Number(o.score) >= 10000 ? 'critical' : Number(o.score) >= 4000 ? 'warning' : osirisSeverity(o.level),
+    timestamp: o.from ? Number(o.from) * 1000 : payload?.timestamp ?? null,
+    note: 'Respaldo OSIRIS de IODA. Una señal de conectividad debe contrastarse antes de inferir una interrupción operacional.'
+  }));
+}
+
+function normalizeOsirisSpaceWeather(payload: any) {
+  const kp = finite(payload?.kp_index);
+  const level = String(payload?.storm_level || 'Unknown');
+  const alerts = Array.isArray(payload?.alerts) ? payload.alerts : [];
+  const flares = Array.isArray(payload?.solar_flares) ? payload.solar_flares : [];
+  const severity = kp !== null && kp >= 8 ? 'critical'
+    : kp !== null && kp >= 6 ? 'warning'
+    : /extreme|severe|strong/i.test(level) ? 'warning'
+    : 'advisory';
+  return [{
+    id: `osiris-swpc-${String(payload?.timestamp || new Date().toISOString()).slice(0,13)}`,
+    title: `Clima espacial · respaldo OSIRIS${kp !== null ? ` · Kp ${kp.toFixed(1)}` : ''}`,
+    eventType: 'Clima espacial',
+    country: 'Global',
+    description: [
+      level && level !== 'Unknown' ? `Nivel ${level}` : '',
+      alerts.slice(0,2).map((a:any)=>a?.message || '').filter(Boolean).join(' | '),
+      flares[0]?.class ? `Llamarada ${flares[0].class}` : ''
+    ].filter(Boolean).join(' · ') || 'Condiciones de clima espacial normalizadas por OSIRIS.',
+    source: 'OSIRIS · NOAA SWPC',
+    url: 'https://osirisai.live/docs',
+    latitude: null,
+    longitude: null,
+    severity,
+    timestamp: payload?.kp_timestamp || payload?.timestamp || new Date().toISOString(),
+    metrics: { planetary_k_index: kp, storm_level: level },
+    note: 'Respaldo OSIRIS de NOAA SWPC para continuidad tecnológica, GPS, radio HF y navegación.'
+  }];
+}
+
 async function fallbackNatural() {
-  const [eonet, usgs, firms] = await Promise.allSettled([
+  const [eonet, usgs, firms, gdacs, nhc, tsunami] = await Promise.allSettled([
     fetchJson('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&limit=100'),
     fetchJson('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson'),
     fallbackFirms(),
+    fallbackGdacs(),
+    fallbackNhc(),
+    fallbackTsunami(),
   ]);
 
   const items: any[] = [];
@@ -329,27 +474,63 @@ async function fallbackNatural() {
   }
 
   if (firms.status === 'fulfilled') items.push(...firms.value);
+  if (gdacs.status === 'fulfilled') items.push(...gdacs.value);
+  if (nhc.status === 'fulfilled') items.push(...nhc.value);
+  if (tsunami.status === 'fulfilled') items.push(...tsunami.value);
 
-  return items.slice(0, 300);
+  const directEonetCount = eonet.status === 'fulfilled' ? pickArray(eonet.value).length : 0;
+  const directUsgsCount = usgs.status === 'fulfilled' ? pickArray(usgs.value).length : 0;
+  const directFirmsCount = firms.status === 'fulfilled' ? firms.value.length : 0;
+  if (!directEonetCount || !directUsgsCount || !directFirmsCount) {
+    try {
+      items.push(...await osirisNaturalFallback({
+        earthquakes: !directUsgsCount,
+        fires: !directFirmsCount,
+        weather: !directEonetCount,
+      }));
+    } catch (error) {
+      console.warn('OSIRIS natural fallback unavailable', error);
+    }
+  }
+
+  const seen = new Set<string>();
+  const deduped = items.filter((x:any) => {
+    const key = String(x.id || `${x.source}-${x.title}-${x.timestamp}`);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return deduped.slice(0, 450);
 }
 
 async function fallbackOutages() {
   const until = Math.floor(Date.now() / 1000);
   const from = until - 48 * 3600;
-  const payload = await fetchJson(
-    `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?from=${from}&until=${until}&format=codf&limit=100`
-  );
+  try {
+    const payload = await fetchJson(
+      `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?from=${from}&until=${until}&format=codf&limit=100`
+    );
 
-  return pickArray(payload).map((o: any, i: number) => ({
-    id: `ioda-${o.id || i}-${o.start || ''}`,
-    title: `Interrupción de conectividad · ${o.location_name || o.location || 'zona no indicada'}`,
-    country: o.location_name || '',
-    description: `Señal ${o.datasource || 'IODA'}${o.score != null ? ` · puntuación ${Math.round(Number(o.score))}` : ''}`,
-    source: 'IODA / Georgia Tech',
-    url: 'https://ioda.inetintel.cc.gatech.edu/',
-    severity: Number(o.score) >= 10000 ? 'critical' : Number(o.score) >= 4000 ? 'warning' : 'advisory',
-    timestamp: o.start ? Number(o.start) * 1000 : null,
-  }));
+    return pickArray(payload).map((o: any, i: number) => ({
+      id: `ioda-${o.id || i}-${o.start || ''}`,
+      title: `Interrupción de conectividad · ${o.location_name || o.location || 'zona no indicada'}`,
+      country: o.location_name || '',
+      description: `Señal ${o.datasource || 'IODA'}${o.score != null ? ` · puntuación ${Math.round(Number(o.score))}` : ''}`,
+      source: 'IODA / Georgia Tech',
+      url: 'https://ioda.inetintel.cc.gatech.edu/',
+      severity: Number(o.score) >= 10000 ? 'critical' : Number(o.score) >= 4000 ? 'warning' : 'advisory',
+      timestamp: o.start ? Number(o.start) * 1000 : null,
+    }));
+  } catch (directError) {
+    try {
+      const osiris = await fetchJson(`${OSIRIS_BASE}/radar`);
+      const items = normalizeOsirisOutages(osiris);
+      if (items.length) return items;
+    } catch (osirisError) {
+      console.warn('OSIRIS outage fallback unavailable', osirisError);
+    }
+    throw directError;
+  }
 }
 
 async function fallbackRadiation() {
@@ -462,11 +643,358 @@ async function fallbackAir() {
   });
 }
 
-async function getFeed(feed: string) {
+
+function decodeXml(s: string) {
+  return String(s || '')
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
+
+function tag(block: string, name: string) {
+  const re = new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${name}>`, 'i');
+  const m = block.match(re);
+  return m ? decodeXml(m[1]).replace(/<[^>]+>/g, '').trim() : '';
+}
+
+function xmlItems(xml: string) {
+  return [...xml.matchAll(/<item(?:\s[^>]*)?>([\s\S]*?)<\/item>/gi)].map(m => m[1]);
+}
+
+function xmlEntries(xml: string) {
+  return [...xml.matchAll(/<entry(?:\s[^>]*)?>([\s\S]*?)<\/entry>/gi)].map(m => m[1]);
+}
+
+function parseCoordPair(v: string) {
+  const nums = String(v || '').match(/-?\d+(?:\.\d+)?/g)?.map(Number) || [];
+  if (nums.length < 2) return { lat: null, lon: null };
+  return { lat: finite(nums[0]), lon: finite(nums[1]) };
+}
+
+function gdacsSeverity(level: string) {
+  const s = String(level || '').toLowerCase();
+  if (s.includes('red')) return 'critical';
+  if (s.includes('orange')) return 'warning';
+  return 'advisory';
+}
+
+async function fallbackGdacs() {
+  const xml = await fetchText('https://www.gdacs.org/xml/rss_7d.xml', 'application/rss+xml, application/xml, text/xml');
+  const out: any[] = [];
+  for (const [i, item] of xmlItems(xml).entries()) {
+    const lat = finite(tag(item, 'geo:lat'));
+    const lon = finite(tag(item, 'geo:long'));
+    const type = tag(item, 'gdacs:eventtype') || 'Desastre';
+    const level = tag(item, 'gdacs:alertlevel');
+    const from = tag(item, 'gdacs:fromdate') || tag(item, 'pubDate');
+    const country = tag(item, 'gdacs:country');
+    const title = tag(item, 'title') || `${type} · ${country || 'ubicación no indicada'}`;
+    out.push({
+      id: `gdacs-${tag(item, 'gdacs:eventid') || i}`,
+      title,
+      eventType: type,
+      country,
+      description: tag(item, 'description'),
+      source: 'GDACS · ONU / Comisión Europea',
+      url: tag(item, 'link') || 'https://www.gdacs.org/',
+      latitude: lat,
+      longitude: lon,
+      severity: gdacsSeverity(level),
+      timestamp: from || null,
+      metrics: {
+        gdacs_alert_level: level || null,
+        gdacs_alert_score: finite(tag(item, 'gdacs:alertscore')),
+        episode_alert_level: tag(item, 'gdacs:episodealertlevel') || null,
+      },
+      note: 'GDACS aporta alertas internacionales para conciencia situacional. La relevancia SST debe verificarse frente a exposición y vulnerabilidad reales.'
+    });
+  }
+  return out.slice(0, 150);
+}
+
+async function fallbackNhc() {
+  const xml = await fetchText('https://www.nhc.noaa.gov/gis-at.xml', 'application/rss+xml, application/xml, text/xml');
+  const out: any[] = [];
+  for (const [i, item] of xmlItems(xml).entries()) {
+    const title = tag(item, 'title');
+    if (!/^Summary\s*-/i.test(title)) continue;
+    const center = tag(item, 'nhc:center');
+    const c = parseCoordPair(center);
+    const name = tag(item, 'nhc:name');
+    const type = tag(item, 'nhc:type') || 'Ciclón tropical';
+    const movement = tag(item, 'nhc:movement');
+    const pressure = tag(item, 'nhc:pressure');
+    const headline = tag(item, 'nhc:headline');
+    out.push({
+      id: `nhc-${tag(item, 'nhc:atcf') || i}`,
+      title: `${type}${name ? ` ${name}` : ''}`,
+      eventType: 'Ciclón tropical',
+      country: 'Atlántico / Caribe',
+      description: [headline, movement ? `Movimiento: ${movement}` : '', pressure ? `Presión: ${pressure}` : ''].filter(Boolean).join(' · '),
+      source: 'NOAA / National Hurricane Center',
+      url: tag(item, 'link') || 'https://www.nhc.noaa.gov/',
+      latitude: c.lat,
+      longitude: c.lon,
+      severity: /hurricane|hurac/i.test(type) ? 'warning' : 'advisory',
+      timestamp: tag(item, 'pubDate') || tag(item, 'nhc:datetime') || null,
+      metrics: { movement: movement || null, pressure: pressure || null, atcf: tag(item, 'nhc:atcf') || null },
+      note: 'Los productos NHC son oficiales para ciclones tropicales del Atlántico. El monitor los usa como señal regional y no sustituye avisos nacionales.'
+    });
+  }
+  return out.slice(0, 30);
+}
+
+function capSeverity(v: string) {
+  const s = String(v || '').toLowerCase();
+  if (/(extreme|severe)/.test(s)) return 'critical';
+  if (/moderate/.test(s)) return 'warning';
+  return 'advisory';
+}
+
+async function fallbackTsunami() {
+  const urls = [
+    ['PTWC', 'https://www.tsunami.gov/events/xml/PHEBCAP.xml'],
+    ['NTWC', 'https://www.tsunami.gov/events/xml/PAAQCAP.xml'],
+  ] as const;
+  const settled = await Promise.allSettled(urls.map(async ([center, url]) => {
+    const xml = await fetchText(url, 'application/xml, text/xml');
+    const event = tag(xml, 'event') || 'Tsunami';
+    const headline = tag(xml, 'headline');
+    const severity = tag(xml, 'severity');
+    const area = tag(xml, 'areaDesc');
+    const circle = tag(xml, 'circle');
+    const c = parseCoordPair(circle);
+    return {
+      id: `tsunami-${center}-${tag(xml, 'identifier') || Date.now()}`,
+      title: headline || `${event} · ${center}`,
+      eventType: 'Tsunami',
+      country: area || 'Caribe / Pacífico',
+      description: [tag(xml, 'description'), tag(xml, 'instruction')].filter(Boolean).join(' '),
+      source: `NOAA Tsunami Warning System · ${center}`,
+      url: 'https://www.tsunami.gov/',
+      latitude: c.lat,
+      longitude: c.lon,
+      severity: capSeverity(severity),
+      timestamp: tag(xml, 'sent') || tag(xml, 'effective') || null,
+      metrics: {
+        urgency: tag(xml, 'urgency') || null,
+        certainty: tag(xml, 'certainty') || null,
+        cap_severity: severity || null,
+        status: tag(xml, 'status') || null,
+      },
+      note: 'Mensaje CAP de los centros de alerta de tsunami de NOAA. Verificar siempre los avisos nacionales y locales aplicables.'
+    };
+  }));
+  return settled.filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled').map(r => r.value);
+}
+
+async function fallbackSpaceWeather() {
+  const [scalesResult, alertsResult, kpResult] = await Promise.allSettled([
+    fetchJson('https://services.swpc.noaa.gov/products/noaa-scales.json'),
+    fetchJson('https://services.swpc.noaa.gov/products/alerts.json'),
+    fetchJson('https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json'),
+  ]);
+
+  const scales = scalesResult.status === 'fulfilled' ? scalesResult.value : {};
+  const alerts = alertsResult.status === 'fulfilled' ? pickArray(alertsResult.value) : [];
+  const kpRows = kpResult.status === 'fulfilled' && Array.isArray(kpResult.value) ? kpResult.value : [];
+
+  const latestKpRow = kpRows.length ? kpRows[kpRows.length - 1] : null;
+  const kp = Array.isArray(latestKpRow) ? finite(latestKpRow[1]) : finite(latestKpRow?.kp_index ?? latestKpRow?.kp);
+
+  const scaleValues: any[] = [];
+  for (const key of ['R','S','G']) {
+    const obj = scales?.[key] || scales?.[key.toLowerCase()] || {};
+    const value = Number(obj?.Scale ?? obj?.scale ?? obj?.CurrentScale ?? obj?.currentScale);
+    if (Number.isFinite(value)) scaleValues.push({ key, value });
+  }
+  const maxScale = scaleValues.reduce((m, x) => Math.max(m, x.value), 0);
+  const severity = maxScale >= 4 || (kp !== null && kp >= 8) ? 'critical' : maxScale >= 2 || (kp !== null && kp >= 6) ? 'warning' : 'advisory';
+
+  const recentAlerts = alerts.slice(-8).map((a: any) => a?.message || a?.product_text || a?.text || '').filter(Boolean);
+  const directAvailable = kp !== null || scaleValues.length > 0 || recentAlerts.length > 0;
+  if (!directAvailable) {
+    try {
+      const osiris = await fetchJson(`${OSIRIS_BASE}/space-weather`);
+      const fallback = normalizeOsirisSpaceWeather(osiris);
+      if (fallback.length) return fallback;
+    } catch (error) {
+      console.warn('OSIRIS space-weather fallback unavailable', error);
+    }
+  }
+  return [{
+    id: `swpc-${new Date().toISOString().slice(0,13)}`,
+    title: `Clima espacial · NOAA SWPC${kp !== null ? ` · Kp ${kp.toFixed(1)}` : ''}`,
+    eventType: 'Clima espacial',
+    country: 'Global',
+    description: recentAlerts.slice(-3).join(' | ') || 'Condiciones y alertas de clima espacial NOAA SWPC.',
+    source: 'NOAA / Space Weather Prediction Center',
+    url: 'https://www.swpc.noaa.gov/',
+    latitude: null,
+    longitude: null,
+    severity,
+    timestamp: new Date().toISOString(),
+    metrics: {
+      planetary_k_index: kp,
+      noaa_scales: scaleValues,
+    },
+    note: 'La relevancia SST se concentra en continuidad tecnológica, GPS, comunicaciones HF, navegación y sistemas dependientes de infraestructura espacial.'
+  }];
+}
+
+async function openAqNearby(lat: number, lon: number) {
+  const apiKey = Deno.env.get('OPENAQ_API_KEY');
+  if (!apiKey) throw new Error('OPENAQ_API_KEY_NOT_CONFIGURED');
+
+  const headers = { 'X-API-Key': apiKey };
+  const locationsPayload = await fetchJson(
+    `https://api.openaq.org/v3/locations?coordinates=${encodeURIComponent(`${lat.toFixed(4)},${lon.toFixed(4)}`)}&radius=25000&limit=20`,
+    headers
+  );
+  const locations = pickArray(locationsPayload);
+  if (!locations.length) {
+    return {
+      feed: 'openaq',
+      available: false,
+      query: { lat, lon, radius_m: 25000 },
+      station: null,
+      measurements: [],
+      age_hours: null,
+      freshness: 'none',
+      note: 'OpenAQ no reportó estaciones dentro de 25 km del punto consultado.'
+    };
+  }
+
+  let best: any = null;
+  for (const loc of locations) {
+    const ll = loc?.coordinates || {};
+    const la = finite(ll.latitude ?? loc.latitude);
+    const lo = finite(ll.longitude ?? loc.longitude);
+    if (la === null || lo === null) continue;
+    const d = haversineKm(lat, lon, la, lo);
+    if (!best || d < best.distance_km) best = { ...loc, latitude: la, longitude: lo, distance_km: d };
+  }
+  if (!best) best = locations[0];
+
+  const locationId = Number(best.id);
+  const latestPayload = await fetchJson(`https://api.openaq.org/v3/locations/${locationId}/latest?limit=100`, headers);
+  const latest = pickArray(latestPayload);
+
+  const sensorMap = new Map<number, any>();
+  for (const s of best.sensors || []) {
+    sensorMap.set(Number(s.id), s);
+  }
+
+  const measurements = latest.map((m: any) => {
+    const sensor = sensorMap.get(Number(m.sensorsId));
+    const parameter = sensor?.parameter || {};
+    return {
+      parameter: parameter.name || parameter.displayName || sensor?.name || `sensor_${m.sensorsId}`,
+      display_name: parameter.displayName || parameter.name || '',
+      units: parameter.units || '',
+      value: finite(m.value),
+      datetime_utc: m?.datetime?.utc || null,
+      datetime_local: m?.datetime?.local || null,
+      sensor_id: m.sensorsId ?? null,
+    };
+  }).filter((m: any) => m.value !== null);
+
+  const times = measurements
+    .map((m:any) => m.datetime_utc ? new Date(m.datetime_utc).getTime() : NaN)
+    .filter((t:number) => Number.isFinite(t));
+  const latestMs = times.length ? Math.max(...times) : NaN;
+  const ageHours = Number.isFinite(latestMs) ? Math.max(0, (Date.now() - latestMs) / 3_600_000) : null;
+  const freshness = ageHours === null ? 'unknown' : ageHours <= 6 ? 'recent' : ageHours <= 24 ? 'aging' : 'old';
+
+  return {
+    feed: 'openaq',
+    available: measurements.length > 0,
+    query: { lat, lon, radius_m: 25000 },
+    station: {
+      id: best.id,
+      name: best.name || best.locality || `OpenAQ ${best.id}`,
+      locality: best.locality || null,
+      country: best.country?.name || best.country?.code || null,
+      provider: best.provider?.name || null,
+      owner: best.owner?.name || null,
+      is_monitor: best.isMonitor ?? null,
+      latitude: best.latitude ?? best.coordinates?.latitude ?? null,
+      longitude: best.longitude ?? best.coordinates?.longitude ?? null,
+      distance_km: best.distance_km ?? null,
+    },
+    measurements,
+    age_hours: ageHours,
+    freshness,
+    note: 'OpenAQ aporta mediciones ambientales de estaciones/sensores cuando existe cobertura. No equivale a una medición ocupacional en el puesto de trabajo.'
+  };
+}
+
+async function hdxContext(locationCode = 'VEN') {
+  const appIdentifier = Deno.env.get('HDX_HAPI_APP_IDENTIFIER');
+  if (!appIdentifier) throw new Error('HDX_HAPI_APP_IDENTIFIER_NOT_CONFIGURED');
+
+  const url = `https://hapi.humdata.org/api/v2/geography-infrastructure/baseline-population?location_code=${encodeURIComponent(locationCode)}&output_format=json&offset=0&limit=5000&admin_level=1&app_identifier=${encodeURIComponent(appIdentifier)}`;
+  const payload = await fetchJson(url);
+  const rows = pickArray(payload);
+
+  const filtered = rows.filter((r: any) => {
+    const gender = String(r.gender ?? r.gender_code ?? '').toLowerCase();
+    const age = String(r.age_range ?? r.age_range_code ?? '').toLowerCase();
+    return (!gender || gender === 'all') && (!age || age === 'all');
+  });
+  const useRows = filtered.length ? filtered : rows;
+
+  const byAdmin = new Map<string, any>();
+  for (const r of useRows) {
+    const code = String(r.admin1_code || r.admin1_name || '');
+    if (!code) continue;
+    const pop = finite(r.population);
+    if (pop === null) continue;
+    const prev = byAdmin.get(code);
+    if (!prev || pop > prev.population) {
+      byAdmin.set(code, {
+        admin1_code: r.admin1_code || null,
+        admin1_name: r.admin1_name || null,
+        population: pop,
+        reference_period_start: r.reference_period_start || null,
+        reference_period_end: r.reference_period_end || null,
+        resource_hdx_id: r.resource_hdx_id || null,
+      });
+    }
+  }
+  return {
+    feed: 'hdx',
+    location_code: locationCode,
+    source: 'OCHA HDX HAPI',
+    data: [...byAdmin.values()].sort((a,b) => (b.population || 0) - (a.population || 0)),
+    note: 'Población de referencia subnacional para contextualizar exposición territorial. Son datos demográficos de línea base, no conteos de personas afectadas por una emergencia.'
+  };
+}
+
+function haversineKm(lat1:number, lon1:number, lat2:number, lon2:number) {
+  const R = 6371;
+  const r = (v:number) => v * Math.PI / 180;
+  const dLat = r(lat2-lat1), dLon = r(lon2-lon1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(r(lat1))*Math.cos(r(lat2))*Math.sin(dLon/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+
+async function getFeed(feed: string, url?: URL) {
   if (feed === 'natural') return fallbackNatural();
   if (feed === 'outages') return fallbackOutages();
   if (feed === 'radiation') return fallbackRadiation();
   if (feed === 'air') return fallbackAir();
+  if (feed === 'space') return fallbackSpaceWeather();
+  if (feed === 'openaq') {
+    const lat = finite(url?.searchParams.get('lat'));
+    const lon = finite(url?.searchParams.get('lon'));
+    if (lat === null || lon === null) throw new Error('OPENAQ_COORDINATES_REQUIRED');
+    return openAqNearby(lat, lon);
+  }
+  if (feed === 'hdx') {
+    return hdxContext(url?.searchParams.get('location_code') || 'VEN');
+  }
   throw new Error('INVALID_FEED');
 }
 
@@ -495,38 +1023,56 @@ Deno.serve(async (req: Request) => {
       feed: 'health',
       fetched_at: new Date().toISOString(),
       direct_sources: true,
+      osiris_fallback_enabled: true,
+      osiris_base: OSIRIS_BASE,
+      osiris_fallback_endpoints: ['earthquakes','fires','weather','radar','space-weather'],
       nasa_firms_map_key_configured: Boolean(Deno.env.get('NASA_FIRMS_MAP_KEY')),
+      openaq_api_key_configured: Boolean(Deno.env.get('OPENAQ_API_KEY')),
+      hdx_hapi_app_identifier_configured: Boolean(Deno.env.get('HDX_HAPI_APP_IDENTIFIER')),
+      reliefweb_appname_configured: Boolean(Deno.env.get('RELIEFWEB_APPNAME')),
       environment_enrichment: 'open-meteo-air-quality-plus-weather',
-      natural_sources: ['NASA EONET', 'USGS', 'NASA FIRMS / VIIRS'],
+      natural_sources: ['NASA EONET', 'USGS', 'NASA FIRMS / VIIRS', 'GDACS', 'NOAA/NHC', 'NOAA Tsunami'],
+      continuity_sources: ['IODA / Georgia Tech', 'NOAA SWPC'],
+      context_sources: ['OpenAQ', 'OCHA HDX HAPI', 'OpenStreetMap / Overpass'],
     }, 200, origin, { 'Cache-Control': 'no-store' });
   }
 
-  if (!['natural','outages','radiation','air'].includes(feed)) {
+  if (!['natural','outages','radiation','air','space','openaq','hdx'].includes(feed)) {
     return json({
       error: 'INVALID_FEED',
-      allowed: ['natural','outages','radiation','air','health']
+      allowed: ['natural','outages','radiation','air','space','openaq','hdx','health']
     }, 400, origin);
   }
 
   try {
-    const items = await getFeed(feed);
+    const items = await getFeed(feed, url);
 
     const source =
       feed === 'natural' ? 'NASA EONET + USGS + NASA FIRMS' :
       feed === 'outages' ? 'IODA / Georgia Tech' :
       feed === 'radiation' ? 'Safecast' :
-      'Open-Meteo / CAMS + Weather';
+      feed === 'air' ? 'Open-Meteo / CAMS + Weather' :
+      feed === 'space' ? 'NOAA SWPC' :
+      feed === 'openaq' ? 'OpenAQ' :
+      'OCHA HDX HAPI';
+
+    const osirisFallbackUsed = Array.isArray(items)
+      && items.some((item:any) => /^OSIRIS\b/i.test(String(item?.source || '')));
+    const responseSource = osirisFallbackUsed ? `${source} + OSIRIS fallback` : source;
 
     return json({
       feed,
       fetched_at: new Date().toISOString(),
-      source,
-      provider_mode: 'direct-sources',
+      source: responseSource,
+      provider_mode: osirisFallbackUsed ? 'osiris-fallback' : 'direct-sources',
+      osiris_fallback_used: osirisFallbackUsed,
       firms_enabled: feed === 'natural' ? Boolean(Deno.env.get('NASA_FIRMS_MAP_KEY')) : undefined,
+      openaq_enabled: feed === 'openaq' ? Boolean(Deno.env.get('OPENAQ_API_KEY')) : undefined,
+      hdx_enabled: feed === 'hdx' ? Boolean(Deno.env.get('HDX_HAPI_APP_IDENTIFIER')) : undefined,
       data: items,
     }, 200, origin, {
       'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
-      'X-Data-Source': source,
+      'X-Data-Source': responseSource,
     });
   } catch (error) {
     console.error('Source failure', feed, error);
