@@ -7,11 +7,85 @@ const feedMeta={
   air:{title:'Calidad ambiental',action:'Revisar exposición de personal al aire libre, grupos sensibles, ventilación y necesidad de medidas temporales.'}
 };
 
-const scopeMeta={
-  ve:{label:'Venezuela + entorno',panel:'Venezuela',center:[7.2,-66.2],zoom:5},
-  latam:{label:'Latinoamérica',panel:'LatAm',center:[-8,-64],zoom:3},
-  world:{label:'Mundo',panel:'Mundo',center:[18,0],zoom:2}
-};
+const FALLBACK_COUNTRIES=[
+  {code:'VE',name:'Venezuela',english:'Venezuela',lat:6.42,lon:-66.59,zoom:5,bbox:'-73.4,0.6,-59.8,12.3'},
+  {code:'AR',name:'Argentina',english:'Argentina',lat:-38.42,lon:-63.62,zoom:4,bbox:'-73.6,-55.1,-53.6,-21.8'},
+  {code:'BO',name:'Bolivia',english:'Bolivia',lat:-16.29,lon:-63.59,zoom:5,bbox:'-69.7,-22.9,-57.5,-9.7'},
+  {code:'BR',name:'Brasil',english:'Brazil',lat:-14.24,lon:-51.93,zoom:4,bbox:'-74.0,-33.8,-34.8,5.3'},
+  {code:'CL',name:'Chile',english:'Chile',lat:-33.45,lon:-70.67,zoom:4,bbox:'-75.7,-56.0,-66.4,-17.4'},
+  {code:'CO',name:'Colombia',english:'Colombia',lat:4.57,lon:-74.30,zoom:5,bbox:'-79.1,-4.3,-66.8,13.5'},
+  {code:'CR',name:'Costa Rica',english:'Costa Rica',lat:9.75,lon:-83.75,zoom:7,bbox:'-86.0,8.0,-82.5,11.2'},
+  {code:'CU',name:'Cuba',english:'Cuba',lat:21.52,lon:-77.78,zoom:6,bbox:'-85.0,19.8,-74.1,23.3'},
+  {code:'DO',name:'República Dominicana',english:'Dominican Republic',lat:18.74,lon:-70.16,zoom:7,bbox:'-72.0,17.5,-68.3,19.9'},
+  {code:'EC',name:'Ecuador',english:'Ecuador',lat:-1.83,lon:-78.18,zoom:6,bbox:'-81.1,-5.1,-75.2,1.5'},
+  {code:'SV',name:'El Salvador',english:'El Salvador',lat:13.79,lon:-88.90,zoom:8,bbox:'-90.2,13.1,-87.7,14.5'},
+  {code:'GT',name:'Guatemala',english:'Guatemala',lat:15.78,lon:-90.23,zoom:7,bbox:'-92.3,13.7,-88.2,17.8'},
+  {code:'GY',name:'Guyana',english:'Guyana',lat:4.86,lon:-58.93,zoom:6,bbox:'-61.4,1.2,-56.5,8.6'},
+  {code:'HT',name:'Haití',english:'Haiti',lat:18.97,lon:-72.29,zoom:7,bbox:'-74.5,18.0,-71.6,20.1'},
+  {code:'HN',name:'Honduras',english:'Honduras',lat:15.20,lon:-86.24,zoom:7,bbox:'-89.4,12.9,-83.1,16.5'},
+  {code:'JM',name:'Jamaica',english:'Jamaica',lat:18.11,lon:-77.30,zoom:8,bbox:'-78.4,17.7,-76.2,18.6'},
+  {code:'MX',name:'México',english:'Mexico',lat:23.63,lon:-102.55,zoom:4,bbox:'-118.4,14.5,-86.7,32.7'},
+  {code:'NI',name:'Nicaragua',english:'Nicaragua',lat:12.87,lon:-85.21,zoom:7,bbox:'-87.7,10.7,-82.5,15.1'},
+  {code:'PA',name:'Panamá',english:'Panama',lat:8.54,lon:-80.78,zoom:7,bbox:'-83.1,7.1,-77.1,9.7'},
+  {code:'PY',name:'Paraguay',english:'Paraguay',lat:-23.44,lon:-58.44,zoom:6,bbox:'-62.7,-27.6,-54.2,-19.3'},
+  {code:'PE',name:'Perú',english:'Peru',lat:-9.19,lon:-75.02,zoom:5,bbox:'-81.4,-18.4,-68.7,0.0'},
+  {code:'SR',name:'Surinam',english:'Suriname',lat:3.92,lon:-56.03,zoom:6,bbox:'-58.1,1.8,-53.9,6.1'},
+  {code:'TT',name:'Trinidad y Tobago',english:'Trinidad and Tobago',lat:10.69,lon:-61.22,zoom:8,bbox:'-62.0,10.0,-60.5,11.4'},
+  {code:'UY',name:'Uruguay',english:'Uruguay',lat:-32.52,lon:-55.77,zoom:6,bbox:'-58.5,-35.0,-53.1,-30.1'},
+  {code:'ES',name:'España',english:'Spain',lat:40.46,lon:-3.75,zoom:5},
+  {code:'PT',name:'Portugal',english:'Portugal',lat:39.40,lon:-8.22,zoom:6},
+  {code:'US',name:'Estados Unidos',english:'United States',lat:37.09,lon:-95.71,zoom:4},
+  {code:'CA',name:'Canadá',english:'Canada',lat:56.13,lon:-106.35,zoom:3}
+];
+let countries=[...FALLBACK_COUNTRIES];
+let activeCountryCode='VE';
+
+function stripMarks(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
+function countryByCode(code=activeCountryCode){return countries.find(c=>c.code===code)||FALLBACK_COUNTRIES.find(c=>c.code===code)||FALLBACK_COUNTRIES[0]}
+function countryName(){return countryByCode().name}
+function countryAliases(c=countryByCode()){return [...new Set([c.name,c.english,...(c.aliases||[])].filter(Boolean))]}
+function countryMatches(x){
+  const c=countryByCode();
+  const rawCode=text(first(x.countryCode,x.raw?.countryCode,x.raw?.country_code,x.raw?.iso2,x.raw?.iso_code,x.raw?.cca2)).toUpperCase();
+  if(rawCode===c.code)return true;
+  const hay=stripMarks([x.country,x.title,x.desc].join(' '));
+  return countryAliases(c).some(a=>hay.includes(stripMarks(a)));
+}
+function updateCountryUi(){
+  const c=countryByCode();
+  const focus=$('#countryFocusTitle');if(focus)focus.textContent=c.name;
+  const impact=$('#impactCountryLabel');if(impact)impact.textContent=c.name;
+}
+function populateCountrySelect(){
+  const select=$('#countryFilter');if(!select)return;
+  const sorted=[...countries].filter(c=>c.code!=='VE').sort((a,b)=>a.name.localeCompare(b.name,'es',{sensitivity:'base'}));
+  select.innerHTML=[countryByCode('VE'),...sorted].map(c=>`<option value="${esc(c.code)}">${esc(c.name)}</option>`).join('');
+  select.value=activeCountryCode;
+}
+async function loadCountries(){
+  populateCountrySelect();updateCountryUi();
+  try{
+    const r=await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,translations,latlng,area',{headers:{Accept:'application/json'}});
+    if(!r.ok)throw new Error('countries');
+    const data=await r.json();
+    const fallbackMap=new Map(FALLBACK_COUNTRIES.map(c=>[c.code,c]));
+    const remote=data.map(c=>{
+      const code=String(c.cca2||'').toUpperCase();if(!code)return null;
+      const base=fallbackMap.get(code)||{};
+      return{
+        ...base,code,
+        name:c?.translations?.spa?.common||c?.name?.common||base.name||code,
+        english:c?.name?.common||base.english||'',
+        aliases:[c?.name?.official,c?.translations?.spa?.official].filter(Boolean),
+        lat:Number(c?.latlng?.[0]??base.lat??0),
+        lon:Number(c?.latlng?.[1]??base.lon??0),
+        zoom:base.zoom||5,
+        area:Number(c?.area||0)
+      };
+    }).filter(Boolean);
+    if(remote.length>150){countries=remote;populateCountrySelect();updateCountryUi()}
+  }catch(e){console.warn('Catálogo internacional de países no disponible; se usa respaldo regional.',e)}
+}
 
 const impactDomains={
   workers:{label:'Trabajadores',icon:'👷'},
@@ -22,16 +96,7 @@ const impactDomains={
   continuity:{label:'Continuidad',icon:'🔄'}
 };
 
-const VENEZUELA_REFERENCE_POINTS=[
-  ['Maracaibo',10.6427,-71.6125],['San Cristóbal',7.7669,-72.2250],['Mérida',8.5897,-71.1561],
-  ['Barquisimeto',10.0678,-69.3474],['Caracas',10.4806,-66.9036],['Valencia',10.1620,-68.0077],
-  ['Puerto La Cruz',10.2138,-64.6328],['Cumaná',10.4564,-64.1670],['Maturín',9.7457,-63.1832],
-  ['Ciudad Guayana',8.2917,-62.7346],['Puerto Ayacucho',5.6639,-67.6236],['Santa Elena de Uairén',4.6023,-61.1100],
-  ['Porlamar',10.9577,-63.8697],['Coro',11.4045,-69.6734]
-];
-
 let activeFeed='natural';
-let activeScope='ve';
 let rawItems=[];
 let markers=[];
 let providerMode='';
@@ -40,17 +105,13 @@ let selectedImpactId='';
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 
-const map=L.map('map',{zoomControl:false,worldCopyJump:true,minZoom:2}).setView(scopeMeta.ve.center,scopeMeta.ve.zoom);
+const map=L.map('map',{zoomControl:false,worldCopyJump:true,minZoom:2}).setView([6.42,-66.59],5);
 L.control.zoom({position:'bottomright'}).addTo(map);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
   maxZoom:18,
   attribution:'© OpenStreetMap contributors'
 }).addTo(map);
 const markerLayer=L.layerGroup().addTo(map);
-
-const VE_BOUNDS={south:-0.8,north:13.8,west:-74.8,east:-57.8};
-const LATAM_BOUNDS={south:-56.8,north:33.2,west:-119.5,east:-33.0};
-const VE_WORDS=/venezuela|caracas|maracaibo|valencia|barquisimeto|maracay|matur[ií]n|barcelona|puerto la cruz|ciudad guayana|san crist[oó]bal|m[eé]rida|coro|cuman[aá]|guanare|barinas|trujillo|tachira|t[aá]chira|zulia|miranda|aragua|carabobo|lara|anzo[aá]tegui|monagas|bol[ií]var|apure|amazonas|delta amacuro|nueva esparta|sucre|falc[oó]n|portuguesa|yaracuy|cojedes|vargas|la guaira/i;
 
 function toast(msg){
   const el=$('#toast');
@@ -98,7 +159,7 @@ function timeOf(o){
   const v=first(o.occurredAt,o.updatedAt,o.startedAt,o.date,o.time,o.timestamp,o.createdAt,o.updated_at);
   if(!v)return'';
   const d=new Date(typeof v==='number'&&v<1e12?v*1000:v);
-  return Number.isNaN(d.getTime())?'':d.toLocaleString('es-VE',{dateStyle:'medium',timeStyle:'short',timeZone:'America/Caracas'});
+  return Number.isNaN(d.getTime())?'':d.toLocaleString('es',{dateStyle:'medium',timeStyle:'short'});
 }
 
 function normalize(o,i){
@@ -111,35 +172,12 @@ function normalize(o,i){
   return{
     id:text(first(o.id,o.eventId,o.event_id,`${activeFeed}-${i}`)),
     title,country,desc,source,url,lat:c.lat,lon:c.lon,
+    countryCode:text(first(o.countryCode,o.country_code,o.iso2,o.iso_code,o.cca2)),
     severity:severityOf(o),time:timeOf(o),raw:o
   };
 }
 
-function inBounds(x,b){
-  return x.lat!==null&&x.lon!==null&&x.lat>=b.south&&x.lat<=b.north&&x.lon>=b.west&&x.lon<=b.east;
-}
-function isVenezuelaFocus(x){
-  const haystack=[x.title,x.country,x.desc].join(' ');
-  return VE_WORDS.test(haystack)||inBounds(x,VE_BOUNDS);
-}
-function inScope(x){
-  if(activeScope==='world')return true;
-  if(activeScope==='latam')return inBounds(x,LATAM_BOUNDS)||/américa latina|latin america|caribbean|caribe/i.test([x.country,x.desc].join(' '));
-  return isVenezuelaFocus(x);
-}
-
-function toRad(v){return v*Math.PI/180}
-function haversine(lat1,lon1,lat2,lon2){
-  const R=6371;
-  const dLat=toRad(lat2-lat1),dLon=toRad(lon2-lon1);
-  const a=Math.sin(dLat/2)**2+Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
-  return 2*R*Math.asin(Math.sqrt(a));
-}
-function distanceToVenezuela(x){
-  if(isVenezuelaFocus(x))return 0;
-  if(x.lat===null||x.lon===null)return null;
-  return Math.min(...VENEZUELA_REFERENCE_POINTS.map(([,lat,lon])=>haversine(x.lat,x.lon,lat,lon)));
-}
+function inScope(x){return countryMatches(x)}
 
 function eventKind(x){
   const s=[x.title,x.desc].join(' ').toLowerCase();
@@ -194,23 +232,17 @@ function impactDomainsFor(kind){
 }
 
 function impactModel(x){
-  const inside=isVenezuelaFocus(x);
-  const distance=distanceToVenezuela(x);
   const kind=eventKind(x);
-  let score=x.severity==='critical'?4:x.severity==='warning'?2:1;
-  if(inside)score+=4;
-  else if(distance!==null&&distance<=250)score+=3;
-  else if(distance!==null&&distance<=600)score+=2;
-  else if(distance!==null&&distance<=1200)score+=1;
-  if(['earthquake','storm','flood','outage'].includes(kind)&&inside)score+=1;
-  const level=score>=7?'high':score>=4?'medium':'low';
-  const confidence=(x.lat!==null&&x.lon!==null)||VE_WORDS.test([x.title,x.country,x.desc].join(' '))?'alta':'media';
-  const proximity=inside?'Dentro de Venezuela / entorno inmediato':distance===null?'Proximidad no determinada':`≈ ${Math.round(distance)} km del punto venezolano de referencia más cercano`;
+  const level=x.severity==='critical'?'high':x.severity==='warning'?'medium':'low';
+  const score=level==='high'?8:level==='medium'?5:2;
+  const matched=countryMatches(x);
+  const confidence=(matched&&x.lat!==null&&x.lon!==null)?'alta':matched?'media-alta':'media';
+  const proximity=matched?`En el foco territorial de ${countryName()}`:`Revisar relación territorial con ${countryName()}`;
   const domains=impactDomainsFor(kind);
   const summary={
-    high:'La señal merece verificación prioritaria porque combina severidad y relevancia territorial para Venezuela.',
-    medium:'La señal puede requerir preparación o seguimiento si coincide con trabajadores, sedes, rutas o servicios expuestos.',
-    low:'La señal se mantiene como contexto preventivo; no implica afectación directa a Venezuela por sí sola.'
+    high:`Señal de prioridad alta para ${countryName()}; requiere verificación rápida de exposición real, instalaciones, rutas y servicios.`,
+    medium:`Señal que merece seguimiento en ${countryName()} si coincide con trabajadores, sedes, rutas o servicios expuestos.`,
+    low:`Señal informativa en ${countryName()}; mantener vigilancia y confirmar si existe exposición ocupacional real.`
   }[level];
   return{score,level,kind,confidence,proximity,domains,summary,actions:impactActions(kind,level)};
 }
@@ -238,9 +270,7 @@ function sstReading(x){
   if(x.severity==='warning')return `Atención: ${base}`;
   return `Vigilancia: ${base}`;
 }
-function proximityLabel(x){
-  return isVenezuelaFocus(x)?'Venezuela / entorno':'Contexto regional';
-}
+function proximityLabel(x){return countryMatches(x)?countryName():'Contexto regional'}
 
 function gdrThreatCode(x){
   const kind=eventKind(x);
@@ -304,7 +334,7 @@ function renderImpactDetail(x){
   const box=$('#impactDetail');
   if(!box)return;
   if(!x){
-    box.innerHTML='<div class="impact-empty"><strong>Selecciona una señal</strong><p>Toca una tarjeta del listado para ver su lectura de impacto potencial sobre Venezuela.</p></div>';
+    box.innerHTML='<div class="impact-empty"><strong>Selecciona una señal</strong><p>Toca una tarjeta del listado para ver su lectura de impacto potencial en el país seleccionado.</p></div>';
     return;
   }
   const m=impactModel(x);
@@ -360,9 +390,9 @@ function render(){
   $('#statTotal').textContent=items.length;
   $('#statCritical').textContent=items.filter(x=>x.severity==='critical').length;
   $('#statSources').textContent=new Set(items.map(x=>x.source).filter(Boolean)).size||'—';
-  $('#statScope').textContent=scopeMeta[activeScope].label;
-  $('#mapScopeTitle').textContent=scopeMeta[activeScope].label;
-  $('#panelTitle').textContent=`${feedMeta[activeFeed].title} · ${scopeMeta[activeScope].panel}`;
+  $('#statScope').textContent=countryName();
+  $('#mapScopeTitle').textContent=countryName();
+  $('#panelTitle').textContent=`${feedMeta[activeFeed].title} · ${countryName()}`;
   renderImpactDashboard(items);
 
   const list=$('#feedList');
@@ -370,7 +400,7 @@ function render(){
   markers=[];
 
   if(!items.length){
-    list.innerHTML=`<div class="empty"><span>◎</span><strong>Sin señales en este foco.</strong><p>No hay resultados que coincidan con la cobertura y filtros actuales. Puedes ampliar a LatAm o Mundo.</p></div>`;
+    list.innerHTML=`<div class="empty"><span>◎</span><strong>Sin señales para ${esc(countryName())}.</strong><p>No hay resultados que coincidan con el país y los filtros actuales. Prueba otra capa o selecciona otro país.</p></div>`;
     return;
   }
 
@@ -392,7 +422,7 @@ function render(){
         <span>${impact.domains.slice(0,3).map(k=>impactDomains[k].label).join(' · ')}</span>
       </div>
       <div class="sst-note"><b>Lectura SST</b><span>${esc(sstReading(x))}</span></div>
-      <button class="impact-open" type="button">Ver impacto Venezuela →</button>
+      <button class="impact-open" type="button">Ver impacto del país →</button>
     </article>`;
   }).join('');
 
@@ -435,8 +465,10 @@ function render(){
 }
 
 function recenter(){
-  const meta=scopeMeta[activeScope];
-  map.setView(meta.center,meta.zoom,{animate:true});
+  const points=filtered().filter(x=>x.lat!==null&&x.lon!==null).map(x=>[x.lat,x.lon]);
+  if(points.length>1){map.fitBounds(points,{padding:[28,28],maxZoom:7,animate:true});return}
+  if(points.length===1){map.setView(points[0],7,{animate:true});return}
+  const c=countryByCode();map.setView([Number(c.lat)||18,Number(c.lon)||0],Number(c.zoom)||5,{animate:true});
 }
 
 function updateProvider(payload){
@@ -454,13 +486,18 @@ function updateProvider(payload){
 async function loadFeed(feed=activeFeed){
   activeFeed=feed;
   selectedImpactId='';
-  $('#panelTitle').textContent=`${feedMeta[feed].title} · ${scopeMeta[activeScope].panel}`;
+  $('#panelTitle').textContent=`${feedMeta[feed].title} · ${countryName()}`;
   $('#feedList').innerHTML='<div class="empty loading"><span></span><strong>Consultando señales…</strong></div>';
   $('#livePill').classList.remove('online');
   $('#livePill b').textContent='Actualizando';
 
   try{
-    const r=await fetch(`${API}?feed=${encodeURIComponent(feed)}`,{headers:{Accept:'application/json'}});
+    const c=countryByCode();
+    const qs=new URLSearchParams({feed,country:c.name,country_code:c.code});
+    if(Number.isFinite(Number(c.lat)))qs.set('lat',String(c.lat));
+    if(Number.isFinite(Number(c.lon)))qs.set('lon',String(c.lon));
+    if(c.bbox)qs.set('bbox',c.bbox);
+    const r=await fetch(`${API}?${qs.toString()}`,{headers:{Accept:'application/json'}});
     const payload=await r.json().catch(()=>({}));
     if(!r.ok){
       const err=new Error(payload?.error||`HTTP ${r.status}`);
@@ -469,13 +506,13 @@ async function loadFeed(feed=activeFeed){
     }
     updateProvider(payload);
     rawItems=pickArray(payload.data??payload).map(normalize);
-    $('#statTime').textContent=new Date().toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit',timeZone:'America/Caracas'});
+    $('#statTime').textContent=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
     $('#livePill').classList.add('online');
     $('#livePill b').textContent='En vivo';
     render();
     recenter();
     const visible=filtered().length;
-    if(!visible&&activeScope==='ve')toast('Sin señales en Venezuela/entorno para esta capa · puedes ampliar a LatAm');
+    if(!visible)toast(`Sin señales visibles para ${countryName()} en esta capa`);
   }catch(e){
     rawItems=[];
     markerLayer.clearLayers();
@@ -497,17 +534,16 @@ $$('.feed-tab').forEach(btn=>btn.addEventListener('click',()=>{
   loadFeed(btn.dataset.feed);
 }));
 
-$$('.scope-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  activeScope=btn.dataset.scope;
+$('#countryFilter').addEventListener('change',()=>{
+  activeCountryCode=$('#countryFilter').value||'VE';
   selectedImpactId='';
-  $$('.scope-btn').forEach(b=>b.classList.toggle('active',b===btn));
-  render();
-  recenter();
-}));
+  updateCountryUi();
+  loadFeed(activeFeed);
+});
 
 $('#searchInput').addEventListener('input',()=>{selectedImpactId='';render();});
 $('#severityFilter').addEventListener('change',()=>{selectedImpactId='';render();});
 $('#refreshBtn').addEventListener('click',()=>loadFeed());
 $('#recenterBtn').addEventListener('click',recenter);
 
-loadFeed();
+loadCountries().finally(()=>loadFeed());
