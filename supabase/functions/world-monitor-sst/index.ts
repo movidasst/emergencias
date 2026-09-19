@@ -131,6 +131,105 @@ function finite(v: unknown): number | null {
   return Number.isFinite(x) ? x : null;
 }
 
+type CountryContext = {
+  code: string;
+  name: string;
+  lat: number | null;
+  lon: number | null;
+  bbox: string | null;
+  bounds: { west:number; south:number; east:number; north:number } | null;
+  resolved_by: 'request' | 'nominatim' | 'center-only';
+};
+
+const countryContextCache = new Map<string,{ value:CountryContext; expires:number }>();
+
+function parseBboxString(value: string | null | undefined) {
+  const parts = String(value || '').split(',').map(Number);
+  if (parts.length !== 4 || parts.some(v => !Number.isFinite(v))) return null;
+  const [west,south,east,north] = parts;
+  if (west < -180 || east > 180 || south < -90 || north > 90 || west >= east || south >= north) return null;
+  return { west, south, east, north };
+}
+
+function bboxString(bounds: {west:number;south:number;east:number;north:number} | null) {
+  return bounds ? [bounds.west,bounds.south,bounds.east,bounds.north].join(',') : null;
+}
+
+function pointInBounds(lat: unknown, lon: unknown, bounds: CountryContext['bounds']) {
+  const la = finite(lat), lo = finite(lon);
+  return !!bounds && la !== null && lo !== null
+    && la >= bounds.south && la <= bounds.north
+    && lo >= bounds.west && lo <= bounds.east;
+}
+
+function normalizeText(v: unknown) {
+  return String(v ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+
+function itemMatchesCountry(item:any, context:CountryContext) {
+  const rawCode = String(item?.countryCode ?? item?.country_code ?? item?.iso2 ?? item?.iso_code ?? item?.cca2 ?? '').toUpperCase();
+  if (rawCode && rawCode === context.code) return true;
+  const hay = normalizeText([item?.country,item?.country_name,item?.location_name,item?.title,item?.description].filter(Boolean).join(' '));
+  if (context.name && hay.includes(normalizeText(context.name))) return true;
+  if (context.code && new RegExp('(^|[^A-Z])'+context.code+'([^A-Z]|$)','i').test(String(item?.country ?? item?.location ?? ''))) return true;
+  return pointInBounds(item?.latitude ?? item?.lat, item?.longitude ?? item?.lon ?? item?.lng, context.bounds);
+}
+
+async function resolveCountryContext(url: URL): Promise<CountryContext> {
+  const code = String(url.searchParams.get('country_code') || '').trim().toUpperCase();
+  const name = String(url.searchParams.get('country') || '').trim();
+  const lat = finite(url.searchParams.get('lat'));
+  const lon = finite(url.searchParams.get('lon'));
+  const requestedBounds = parseBboxString(url.searchParams.get('bbox'));
+
+  if (requestedBounds) {
+    return { code, name, lat, lon, bbox:bboxString(requestedBounds), bounds:requestedBounds, resolved_by:'request' };
+  }
+
+  const cacheKey = code || normalizeText(name);
+  const cached = countryContextCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return { ...cached.value, lat: lat ?? cached.value.lat, lon: lon ?? cached.value.lon };
+  }
+
+  if (code || name) {
+    try {
+      const params = new URLSearchParams({ format:'jsonv2', limit:'1', addressdetails:'1' });
+      if (name) params.set('country',name);
+      if (code) params.set('countrycodes',code.toLowerCase());
+      const payload = await fetchJson('https://nominatim.openstreetmap.org/search?'+params.toString());
+      const row = Array.isArray(payload) ? payload[0] : null;
+      const bb = Array.isArray(row?.boundingbox) ? row.boundingbox.map(Number) : [];
+      if (bb.length === 4 && bb.every(Number.isFinite)) {
+        const bounds = { south:bb[0], north:bb[1], west:bb[2], east:bb[3] };
+        const value:CountryContext = {
+          code,
+          name: name || String(row?.display_name || code),
+          lat: lat ?? finite(row?.lat),
+          lon: lon ?? finite(row?.lon),
+          bbox:bboxString(bounds),
+          bounds,
+          resolved_by:'nominatim'
+        };
+        if (cacheKey) countryContextCache.set(cacheKey,{value,expires:Date.now()+24*60*60*1000});
+        return value;
+      }
+    } catch (error) {
+      console.warn('Country context lookup unavailable', code || name, error);
+    }
+  }
+
+  return { code, name, lat, lon, bbox:null, bounds:null, resolved_by:'center-only' };
+}
+
+function scopeItemsToCountry(items:any[], context:CountryContext, feed:string) {
+  if (!Array.isArray(items)) return [];
+  if (!context.code && !context.name) return items;
+  if (feed === 'air' || feed === 'openaq') return items;
+  if (feed === 'space') return items;
+  return items.filter(item => itemMatchesCountry(item, context));
+}
+
 function fmt(v: number | null, digits = 0) {
   return v === null ? '—' : v.toFixed(digits);
 }
@@ -214,11 +313,11 @@ function firmsTimestamp(row: Record<string,string>) {
   return Number.isNaN(d.getTime()) ? date : d.toISOString();
 }
 
-async function fallbackFirms(url?: URL) {
+async function fallbackFirms(context: CountryContext) {
   const key = Deno.env.get('NASA_FIRMS_MAP_KEY');
   if (!key) return [];
-  const requestedCountry = String(url?.searchParams.get('country') || '').trim();
-  const requestedBbox = String(url?.searchParams.get('bbox') || '').trim();
+  const requestedCountry = context.name;
+  const requestedBbox = context.bbox;
   if (requestedCountry && !requestedBbox) return [];
   const firmsBbox = requestedBbox || FIRMS_BBOX;
   const countryLabel = requestedCountry || 'Venezuela';
@@ -427,11 +526,11 @@ function normalizeOsirisSpaceWeather(payload: any) {
   }];
 }
 
-async function fallbackNatural(url?: URL) {
+async function fallbackNatural(context: CountryContext) {
   const [eonet, usgs, firms, gdacs, nhc, tsunami] = await Promise.allSettled([
     fetchJson('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&limit=100'),
     fetchJson('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson'),
-    fallbackFirms(url),
+    fallbackFirms(context),
     fallbackGdacs(),
     fallbackNhc(),
     fallbackTsunami(),
@@ -508,7 +607,7 @@ async function fallbackNatural(url?: URL) {
   return deduped.slice(0, 450);
 }
 
-async function fallbackOutages() {
+async function fallbackOutages(context?: CountryContext) {
   const until = Math.floor(Date.now() / 1000);
   const from = until - 48 * 3600;
   try {
@@ -516,16 +615,18 @@ async function fallbackOutages() {
       `https://api.ioda.inetintel.cc.gatech.edu/v2/outages/events?from=${from}&until=${until}&format=codf&limit=100`
     );
 
-    return pickArray(payload).map((o: any, i: number) => ({
+    const items = pickArray(payload).map((o: any, i: number) => ({
       id: `ioda-${o.id || i}-${o.start || ''}`,
       title: `Interrupción de conectividad · ${o.location_name || o.location || 'zona no indicada'}`,
       country: o.location_name || '',
+      countryCode: o.country_code || o.iso2 || o.code || '',
       description: `Señal ${o.datasource || 'IODA'}${o.score != null ? ` · puntuación ${Math.round(Number(o.score))}` : ''}`,
       source: 'IODA / Georgia Tech',
       url: 'https://ioda.inetintel.cc.gatech.edu/',
       severity: Number(o.score) >= 10000 ? 'critical' : Number(o.score) >= 4000 ? 'warning' : 'advisory',
       timestamp: o.start ? Number(o.start) * 1000 : null,
     }));
+    return context ? scopeItemsToCountry(items, context, 'outages') : items;
   } catch (directError) {
     try {
       const osiris = await fetchJson(`${OSIRIS_BASE}/radar`);
@@ -538,10 +639,10 @@ async function fallbackOutages() {
   }
 }
 
-async function fallbackRadiation() {
+async function fallbackRadiation(context?: CountryContext) {
   const payload = await fetchJson('https://simplemap.safecast.org/api/sensors');
 
-  return pickArray(payload).slice(0, 150).map((s: any, i: number) => {
+  const items = pickArray(payload).slice(0, 500).map((s: any, i: number) => {
     const value = Number(s.value ?? s.usvh ?? s.uSv ?? s.cpm ?? s.last_value ?? s.reading);
     const unit = s.unit || (s.cpm != null ? 'CPM' : '');
 
@@ -558,6 +659,7 @@ async function fallbackRadiation() {
       timestamp: s.updated_at || s.timestamp || s.last_seen || null,
     };
   });
+  return context ? scopeItemsToCountry(items, context, 'radiation').slice(0,150) : items.slice(0,150);
 }
 
 async function fallbackAir(url?: URL) {
@@ -992,10 +1094,10 @@ function haversineKm(lat1:number, lon1:number, lat2:number, lon2:number) {
   return 2 * R * Math.asin(Math.sqrt(a));
 }
 
-async function getFeed(feed: string, url?: URL) {
-  if (feed === 'natural') return fallbackNatural(url);
-  if (feed === 'outages') return fallbackOutages();
-  if (feed === 'radiation') return fallbackRadiation();
+async function getFeed(feed: string, url: URL, context: CountryContext) {
+  if (feed === 'natural') return fallbackNatural(context);
+  if (feed === 'outages') return fallbackOutages(context);
+  if (feed === 'radiation') return fallbackRadiation(context);
   if (feed === 'air') return fallbackAir(url);
   if (feed === 'space') return fallbackSpaceWeather();
   if (feed === 'openaq') {
@@ -1057,7 +1159,9 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const items = await getFeed(feed, url);
+    const countryContext = await resolveCountryContext(url);
+    const rawItems = await getFeed(feed, url, countryContext);
+    const items = scopeItemsToCountry(rawItems, countryContext, feed);
 
     const source =
       feed === 'natural' ? 'NASA EONET + USGS + NASA FIRMS' :
@@ -1081,6 +1185,10 @@ Deno.serve(async (req: Request) => {
       firms_enabled: feed === 'natural' ? Boolean(Deno.env.get('NASA_FIRMS_MAP_KEY')) : undefined,
       openaq_enabled: feed === 'openaq' ? Boolean(Deno.env.get('OPENAQ_API_KEY')) : undefined,
       hdx_enabled: feed === 'hdx' ? Boolean(Deno.env.get('HDX_HAPI_APP_IDENTIFIER')) : undefined,
+      country_scoped: Boolean(countryContext.code || countryContext.name),
+      country_context: countryContext,
+      raw_count: Array.isArray(rawItems) ? rawItems.length : 0,
+      scoped_count: Array.isArray(items) ? items.length : 0,
       data: items,
     }, 200, origin, {
       'Cache-Control': 'public, max-age=120, s-maxage=120, stale-while-revalidate=300',
