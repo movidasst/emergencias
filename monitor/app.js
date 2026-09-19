@@ -383,10 +383,10 @@ function recenter(){
 function updateProvider(payload){
   providerMode=payload?.provider_mode||'';
   const el=$('#providerMode');
-  if(providerMode==='world-monitor'){
-    el.textContent='World Monitor · enriquecido';
-  }else if(providerMode==='public-fallback'){
-    el.textContent='Fuentes públicas verificables';
+  if(providerMode==='osiris-fallback'||payload?.osiris_fallback_used){
+    el.textContent='OSIRIS activó respaldo de datos';
+  }else if(providerMode==='direct-sources'){
+    el.textContent='Fuentes directas verificables';
   }else{
     el.textContent='Fuentes de inteligencia situacional';
   }
