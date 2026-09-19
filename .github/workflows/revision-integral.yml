@@ -1,59 +1,23 @@
-name: Revision integral emergencias
+name: Verificación de identidad Emergencias
 
 on:
-  push:
-    paths:
-      - 'tools/fix_base_syntax.py'
-      - 'tools/revision_integral_r3.py'
-      - '.github/workflows/revision-integral.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  revisar-index:
+  verificar-identidad:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Configurar Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Configurar Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Corregir sintaxis base
-        run: python tools/fix_base_syntax.py
-
-      - name: Aplicar revisión integral R3
-        run: python tools/revision_integral_r3.py
-
-      - name: Verificar contenido
+      - name: Verificar sello oficial R10
         run: |
-          git diff --check
-          grep -q 'versión 2026.08.15-r3' index.html
-          grep -q 'property="og:title"' index.html
-          grep -q 'Cómo evaluar vulnerabilidad' index.html
-          grep -q 'Descripción de la brecha' index.html
-          grep -q 'sfInfra' index.html
-          grep -q 'sfEnv' index.html
-
-      - name: Publicar index revisado
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add index.html
-          if git diff --cached --quiet; then
-            echo 'Sin cambios pendientes.'
-          else
-            git commit -m 'Revisión integral R3: flujo, metodología y previsualización social'
-            git push
-          fi
+          test -f assets/sello-movida-r10.png
+          grep -q 'assets/sello-movida-r10.png' index.html
+          grep -q 'assets/sello-movida-r10.png' pe/index.html
+          grep -q 'assets/sello-movida-r10.png' monitor/index.html
+          ! grep -R -n '1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s' index.html pe monitor site*.webmanifest || exit 1
+          echo "Identidad R10 verificada."
