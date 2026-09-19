@@ -12,20 +12,20 @@ seo='''<meta content="#007b85" name="theme-color"/>
 <meta content="La Movida de SST Plus" name="author"/>
 <meta content="index,follow,max-image-preview:large" name="robots"/>
 <link href="https://emergencias.movidasst.com/" rel="canonical"/>
-<link href="https://drive.google.com/thumbnail?id=1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s&amp;sz=w256" rel="icon"/>
+<link href="/assets/sello-movida-r10.png?v=20260919-r10" rel="icon"/>
 <meta content="website" property="og:type"/>
 <meta content="es_VE" property="og:locale"/>
 <meta content="La Movida de SST Plus" property="og:site_name"/>
 <meta content="https://emergencias.movidasst.com/" property="og:url"/>
 <meta content="Emergencias | La Movida de SST Plus" property="og:title"/>
 <meta content="Identifica amenazas, evalúa vulnerabilidad y construye escenarios de emergencia con un flujo técnico guiado." property="og:description"/>
-<meta content="https://drive.google.com/thumbnail?id=1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s&amp;sz=w1600&amp;v=20260815r3" property="og:image"/>
-<meta content="https://drive.google.com/thumbnail?id=1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s&amp;sz=w1600&amp;v=20260815r3" property="og:image:secure_url"/>
+<meta content="/assets/sello-movida-r10.png?v=20260919-r10" property="og:image"/>
+<meta content="/assets/sello-movida-r10.png?v=20260919-r10" property="og:image:secure_url"/>
 <meta content="La Movida de SST Plus · De la reacción a la prevención" property="og:image:alt"/>
 <meta content="summary_large_image" name="twitter:card"/>
 <meta content="Emergencias | La Movida de SST Plus" name="twitter:title"/>
 <meta content="Amenazas, vulnerabilidad y escenarios de emergencia en un flujo técnico guiado." name="twitter:description"/>
-<meta content="https://drive.google.com/thumbnail?id=1MjVa3JxeKC95xEdlcZ5ZFMCKlatbrU2s&amp;sz=w1600&amp;v=20260815r3" name="twitter:image"/>
+<meta content="/assets/sello-movida-r10.png?v=20260919-r10" name="twitter:image"/>
 <title>Emergencias | La Movida de SST Plus</title>'''
 html,n=pat.subn(seo,html,count=1)
 if n!=1: raise SystemExit('No se pudo actualizar SEO.')
