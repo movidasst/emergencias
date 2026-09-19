@@ -4,20 +4,20 @@
   "short_name": "Emergencias SST",
   "description": "Monitoreo situacional y aplicación para construir el Plan de Emergencias.",
   "lang": "es",
-  "start_url": "/?v=20260919-r6",
+  "start_url": "/?v=20260919-r10",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f8fafc",
   "theme_color": "#007b85",
   "icons": [
     {
-      "src": "https://drive.google.com/thumbnail?id=1IlAvUr0cP6LtILZobFlKRYO6aCKW26aH&sz=w1600&v=20260919-r6",
+      "src": "/assets/sello-movida-r10.png?v=20260919-r10",
       "sizes": "1254x1254",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://drive.google.com/thumbnail?id=1IlAvUr0cP6LtILZobFlKRYO6aCKW26aH&sz=w1600&v=20260919-r6",
+      "src": "/assets/sello-movida-r10.png?v=20260919-r10",
       "sizes": "1254x1254",
       "type": "image/png",
       "purpose": "maskable"
