@@ -126,7 +126,7 @@
 
       <div class="data-method">
         <article><span>1</span><div><b>Fuente</b><p>Se recibe un evento, observación o condición desde el proveedor indicado.</p></div></article>
-        <article><span>2</span><div><b>Contexto</b><p>Se revisan ubicación, severidad, tipo de señal y proximidad a Venezuela.</p></div></article>
+        <article><span>2</span><div><b>Contexto</b><p>Se revisan ubicación, severidad, tipo de señal y relación con el país seleccionado.</p></div></article>
         <article><span>3</span><div><b>Lectura SST</b><p>Se identifican ámbitos que conviene verificar: trabajadores, sedes, movilidad, servicios, comunicaciones y continuidad.</p></div></article>
       </div>
 
