@@ -56,8 +56,11 @@
   <link rel="stylesheet" href="./environment.css">
   <style>
     .monitor-brandline{display:flex;align-items:flex-start;gap:12px}
-    .official-logo{width:58px;height:58px;flex:0 0 58px;display:block;padding:3px;border-radius:50%;background:#fff;object-fit:contain;box-shadow:0 8px 24px rgba(0,32,91,.14)}
-    @media(max-width:560px){.monitor-brandline{gap:9px}.official-logo{width:46px;height:46px;flex-basis:46px}}
+    .official-logo{width:78px;height:78px;flex:0 0 78px;display:block;padding:4px;border:2px solid #fff;border-radius:50%;background:#fff;object-fit:contain;box-shadow:0 0 0 6px rgba(0,123,133,.09),0 16px 38px rgba(0,32,91,.18);animation:movidaLogoFloat 4.6s ease-in-out infinite;transition:transform .25s ease,box-shadow .25s ease}
+    .official-logo:hover{transform:translateY(-2px) scale(1.035);box-shadow:0 0 0 8px rgba(0,123,133,.11),0 18px 42px rgba(0,32,91,.22)}
+    @keyframes movidaLogoFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+    @media(max-width:560px){.monitor-brandline{gap:10px}.official-logo{width:58px;height:58px;flex-basis:58px}}
+    @media(prefers-reduced-motion:reduce){.official-logo{animation:none!important}}
   </style>
 </head>
 <body>
