@@ -1,0 +1,26 @@
+{
+  "id": "/?app=r10",
+  "name": "Emergencias SST · La Movida SST Plus",
+  "short_name": "Emergencias SST",
+  "description": "Monitoreo situacional y herramienta guiada para construir el Plan de Emergencias.",
+  "lang": "es",
+  "start_url": "/?v=20260919-r10",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#007b85",
+  "icons": [
+    {
+      "src": "/assets/sello-movida-r10.png?v=20260919-r10",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/sello-movida-r10.png?v=20260919-r10",
+      "sizes": "1254x1254",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
