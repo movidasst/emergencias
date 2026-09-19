@@ -214,13 +214,18 @@ function firmsTimestamp(row: Record<string,string>) {
   return Number.isNaN(d.getTime()) ? date : d.toISOString();
 }
 
-async function fallbackFirms() {
+async function fallbackFirms(url?: URL) {
   const key = Deno.env.get('NASA_FIRMS_MAP_KEY');
   if (!key) return [];
+  const requestedCountry = String(url?.searchParams.get('country') || '').trim();
+  const requestedBbox = String(url?.searchParams.get('bbox') || '').trim();
+  if (requestedCountry && !requestedBbox) return [];
+  const firmsBbox = requestedBbox || FIRMS_BBOX;
+  const countryLabel = requestedCountry || 'Venezuela';
 
   const settled = await Promise.allSettled(
     FIRMS_SOURCES.map(async ([source, label]) => {
-      const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(key)}/${source}/${FIRMS_BBOX}/1`;
+      const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(key)}/${source}/${firmsBbox}/1`;
       const csv = await fetchText(url, 'text/csv');
       return parseCsv(csv).map((row, i) => {
         const lat = finite(row.latitude);
@@ -233,7 +238,7 @@ async function fallbackFirms() {
           id: `firms-${source}-${lat}-${lon}-${row.acq_date}-${row.acq_time}-${i}`,
           title: `Foco térmico satelital${frp !== null ? ` · ${frp.toFixed(1)} MW` : ''}`,
           eventType: 'Incendio / anomalía térmica',
-          country: 'Venezuela + entorno',
+          country: countryLabel,
           description: [
             `Detección ${label}`,
             `confianza ${firmsConfidence(row.confidence)}`,
@@ -422,11 +427,11 @@ function normalizeOsirisSpaceWeather(payload: any) {
   }];
 }
 
-async function fallbackNatural() {
+async function fallbackNatural(url?: URL) {
   const [eonet, usgs, firms, gdacs, nhc, tsunami] = await Promise.allSettled([
     fetchJson('https://eonet.gsfc.nasa.gov/api/v3/events?status=open&days=30&limit=100'),
     fetchJson('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson'),
-    fallbackFirms(),
+    fallbackFirms(url),
     fallbackGdacs(),
     fallbackNhc(),
     fallbackTsunami(),
@@ -555,9 +560,16 @@ async function fallbackRadiation() {
   });
 }
 
-async function fallbackAir() {
-  const lats = AIR_CITIES.map(c => c[2]).join(',');
-  const lons = AIR_CITIES.map(c => c[3]).join(',');
+async function fallbackAir(url?: URL) {
+  const requestedLat = finite(url?.searchParams.get('lat'));
+  const requestedLon = finite(url?.searchParams.get('lon'));
+  const requestedCountry = String(url?.searchParams.get('country') || '').trim();
+  const requestedCity = String(url?.searchParams.get('city') || requestedCountry || '').trim();
+  const cities:any[] = requestedLat !== null && requestedLon !== null
+    ? [[requestedCity || requestedCountry || 'Ubicación seleccionada', requestedCountry || '', requestedLat, requestedLon]]
+    : AIR_CITIES;
+  const lats = cities.map(c => c[2]).join(',');
+  const lons = cities.map(c => c[3]).join(',');
 
   const airUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${encodeURIComponent(lats)}&longitude=${encodeURIComponent(lons)}&current=us_aqi,pm2_5,pm10,ozone,dust,uv_index&timezone=auto`;
   const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(lats)}&longitude=${encodeURIComponent(lons)}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,weather_code&timezone=auto`;
@@ -579,7 +591,7 @@ async function fallbackAir() {
     ? (Array.isArray(weatherResult.value) ? weatherResult.value : [weatherResult.value])
     : [];
 
-  return AIR_CITIES.map((city, i) => {
+  return cities.map((city, i) => {
     const air = airRows[i] || {};
     const weather = weatherRows[i] || {};
     const aq = air?.current || {};
@@ -981,10 +993,10 @@ function haversineKm(lat1:number, lon1:number, lat2:number, lon2:number) {
 }
 
 async function getFeed(feed: string, url?: URL) {
-  if (feed === 'natural') return fallbackNatural();
+  if (feed === 'natural') return fallbackNatural(url);
   if (feed === 'outages') return fallbackOutages();
   if (feed === 'radiation') return fallbackRadiation();
-  if (feed === 'air') return fallbackAir();
+  if (feed === 'air') return fallbackAir(url);
   if (feed === 'space') return fallbackSpaceWeather();
   if (feed === 'openaq') {
     const lat = finite(url?.searchParams.get('lat'));
