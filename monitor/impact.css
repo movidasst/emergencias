@@ -61,6 +61,8 @@
 .impact-actions>b{font-size:11px;color:var(--navy);text-transform:uppercase;letter-spacing:.055em}
 .impact-actions ul{margin:0;padding-left:18px;display:grid;gap:5px}
 .impact-actions li{font-size:11px;line-height:1.4;color:var(--text)}
+.gdr-action{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:44px;padding:10px 14px;border-radius:12px;background:linear-gradient(135deg,var(--teal),var(--navy));color:#fff;font-size:11px;font-weight:800;text-decoration:none;box-shadow:0 8px 20px rgba(0,32,91,.12)}
+.gdr-action:hover{filter:brightness(.98)}
 .impact-source{width:max-content;color:var(--teal);font-size:11px;font-weight:800;text-decoration:none;border-bottom:1px solid rgba(0,123,133,.25)}
 .impact-source:hover{color:var(--navy)}
 .impact-mini{
