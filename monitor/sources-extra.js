@@ -53,6 +53,9 @@
       const p=await r.json().catch(()=>({}));
       if(!r.ok)throw new Error('health');
 
+      if(p.osiris_fallback_enabled) setBadge('osiris','Activo · respaldo automático','active');
+      else setBadge('osiris','Respaldo no disponible','error');
+
       if(p.nasa_firms_map_key_configured) setBadge('firms','Activo · VIIRS NOAA-20/21/Suomi-NPP','active');
       else setBadge('firms','Revisar MAP KEY / despliegue','key');
 
@@ -61,7 +64,7 @@
 
       if(p.hdx_hapi_app_identifier_configured) setBadge('hdx','Identificador configurado · verificando datos','ready');
     }catch{
-      ['firms','gdacs','nhc','tsunami','swpc','openaq','hdx'].forEach(id=>setBadge(id,'Estado temporalmente no disponible','error'));
+      ['osiris','firms','gdacs','nhc','tsunami','swpc','openaq','hdx'].forEach(id=>setBadge(id,'Estado temporalmente no disponible','error'));
     }
   }
 
