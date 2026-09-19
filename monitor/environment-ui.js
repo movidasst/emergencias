@@ -146,8 +146,8 @@
         <a href="https://open-meteo.com/en/docs/air-quality-api" target="_blank" rel="noopener" class="source-card">
           <span class="source-icon">☀️</span><div><b>Open-Meteo / CAMS</b><small>Exposición ambiental</small><p>UV, AQI, PM2.5, PM10, ozono, polvo y variables meteorológicas. Son datos/modelos ambientales, no mediciones higiénicas dentro del puesto de trabajo.</p></div>
         </a>
-        <a href="https://worldmonitor.app/" target="_blank" rel="noopener" class="source-card optional">
-          <span class="source-icon">📡</span><div><b>World Monitor</b><small>Enriquecimiento opcional</small><p>Cuando está disponible puede enriquecer determinadas capas. El sistema mantiene fuentes públicas directas como respaldo independiente.</p></div>
+        <a href="https://osirisai.live/docs" target="_blank" rel="noopener" class="source-card optional" data-source-id="osiris">
+          <span class="source-icon">◎</span><div><b>OSIRIS Intelligence</b><small>Redundancia de fuentes</small><p>Se usa como respaldo automático cuando una familia de fuentes directas no responde. No reemplaza a USGS, NASA, NOAA ni IODA como fuentes primarias.</p><span class="source-status ready">Respaldo API habilitado</span></div>
         </a>
       </div>
 
