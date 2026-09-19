@@ -4,11 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#007b85">
-  <meta name="description" content="Monitor gratuito SST Venezuela: sismos, incendios, conectividad, radiación, calidad del aire, calor, viento y lluvia con lectura de impacto preventivo.">
+  <meta name="description" content="Monitor internacional SST: sismos, incendios, conectividad, radiación, calidad del aire, calor, viento y lluvia con lectura de impacto preventivo.">
   <meta name="author" content="David Linares Brea">
   <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-  <meta property="og:title" content="Monitor SST Venezuela | La Movida de SST Plus">
-  <meta property="og:description" content="Venezuela primero: señales, radiación UV, exposición ambiental, impacto potencial y acciones preventivas para SST, emergencias y continuidad operacional.">
+  <meta property="og:title" content="Monitor SST Internacional | La Movida de SST Plus">
+  <meta property="og:description" content="Selecciona un país y observa señales, exposición ambiental e impacto potencial para SST, emergencias y continuidad operacional.">
   <meta property="og:type" content="website">
   <meta property="og:locale" content="es_VE">
   <meta property="og:site_name" content="La Movida de SST Plus">
@@ -18,29 +18,28 @@
   <meta property="og:image:type" content="image/png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="Monitor de Emergencias SST Venezuela · La Movida de SST Plus">
+  <meta property="og:image:alt" content="Monitor Internacional de Emergencias SST · La Movida de SST Plus">
   <link rel="canonical" href="https://emergencias.movidasst.com/monitor/">
   <link rel="icon" type="image/png" href="https://drive.google.com/thumbnail?id=1IlAvUr0cP6LtILZobFlKRYO6aCKW26aH&amp;sz=w1600&amp;v=20260919-r6">
   <link rel="apple-touch-icon" href="https://drive.google.com/thumbnail?id=1IlAvUr0cP6LtILZobFlKRYO6aCKW26aH&amp;sz=w1600&amp;v=20260919-r6">
   <link rel="manifest" href="/site-r6.webmanifest?v=20260919-r6">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="Monitoreo de Emergencias SST Venezuela">
-  <meta name="twitter:description" content="Señales naturales, conectividad, radiación y exposición ambiental con lectura preventiva para Venezuela.">
+  <meta name="twitter:title" content="Monitoreo Internacional de Emergencias SST">
+  <meta name="twitter:description" content="Señales naturales, conectividad, radiación y exposición ambiental con lectura preventiva por país.">
   <meta name="twitter:image" content="https://emergencias.movidasst.com/og-emergencias-sst.png">
-  <title>Monitoreo de Emergencias SST Venezuela | La Movida</title>
+  <title>Monitoreo Internacional de Emergencias SST | La Movida</title>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     "@id": "https://emergencias.movidasst.com/monitor/#application",
     "url": "https://emergencias.movidasst.com/monitor/",
-    "name": "Monitor de Emergencias SST Venezuela",
+    "name": "Monitor Internacional de Emergencias SST",
     "description": "Monitor gratuito de señales naturales, conectividad, radiación y exposición ambiental con lectura de impacto potencial para la seguridad y salud en el trabajo.",
     "applicationCategory": "SafetyApplication",
     "operatingSystem": "Any",
     "isAccessibleForFree": true,
-    "inLanguage": "es-VE",
-    "spatialCoverage": {"@type": "Country", "name": "Venezuela"},
+    "inLanguage": "es",
     "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
     "author": {"@type": "Person", "name": "David Linares Brea", "url": "https://davidlinares.movidasst.com/"},
     "publisher": {"@id": "https://www.movidasst.com/#organization"},
@@ -75,7 +74,7 @@
         <img class="official-logo" src="https://drive.google.com/thumbnail?id=1IlAvUr0cP6LtILZobFlKRYO6aCKW26aH&amp;sz=w1600&amp;v=20260919-r6" width="600" height="600" alt="Logo oficial de La Movida de SST Plus" decoding="async" fetchpriority="high">
         <div>
           <p class="eyebrow">LA MOVIDA DE SST PLUS</p>
-          <h1>Monitor SST <span>Venezuela</span></h1>
+          <h1>Monitor SST <span>Internacional</span></h1>
           <p class="subtitle">Inteligencia situacional para anticipar, verificar y decidir.</p>
         </div>
       </div>
@@ -92,36 +91,36 @@
       <div class="hero-copy">
         <div class="hero-tags">
           <span class="tag">De la Reacción a la Prevención</span>
-          <span class="country-tag">🇻🇪 Venezuela primero</span>
+          <span class="country-tag">🌎 Cobertura internacional</span>
         </div>
         <h2>Señales que pueden cambiar una decisión preventiva.</h2>
-        <p>El foco inicial es Venezuela y su entorno inmediato. Además de mostrar la señal, el monitor estima su relevancia preventiva y qué ámbitos de SST conviene verificar antes de actuar.</p>
+        <p>Elige el país que quieres observar. Además de mostrar la señal, el monitor estima su relevancia preventiva y qué ámbitos de SST conviene verificar antes de actuar.</p>
       </div>
       <div class="hero-actions">
         <button class="primary-btn" id="refreshBtn" type="button">↻ Actualizar datos</button>
-        <a class="secondary-btn" href="#impactDashboard">Ver impacto Venezuela</a>
+        <a class="secondary-btn" href="#impactDashboard">Ver impacto del país seleccionado</a>
       </div>
     </section>
 
-    <section class="venezuela-focus" aria-label="Cobertura geográfica">
-      <div class="flag-line" aria-hidden="true"><i></i><i></i><i></i></div>
+    <section class="venezuela-focus country-focus" aria-label="Seleccionar país de monitoreo">
       <div class="focus-copy">
-        <p class="eyebrow">COBERTURA PRIORITARIA</p>
-        <h3>Venezuela + entorno de impacto</h3>
-        <p>Incluye señales dentro del país y eventos cercanos capaces de afectar trabajadores, instalaciones, movilidad, servicios o continuidad.</p>
+        <p class="eyebrow">PAÍS EN OBSERVACIÓN</p>
+        <h3 id="countryFocusTitle">Venezuela</h3>
+        <p>Selecciona el país que quieres observar. Venezuela aparece primero por defecto; los demás países se ordenan alfabéticamente.</p>
       </div>
-      <div class="scope-switch" role="group" aria-label="Cambiar cobertura">
-        <button class="scope-btn active" data-scope="ve" type="button">Venezuela</button>
-        <button class="scope-btn" data-scope="latam" type="button">LatAm</button>
-        <button class="scope-btn" data-scope="world" type="button">Mundo</button>
-      </div>
+      <label class="country-picker" for="countryFilter">
+        <span>País</span>
+        <select id="countryFilter" aria-label="Seleccionar país">
+          <option value="VE">Venezuela</option>
+        </select>
+      </label>
     </section>
 
     <section class="stats" aria-label="Resumen del monitor">
       <article>
         <span>Señales en foco</span>
         <strong id="statTotal">—</strong>
-        <small id="statScope">Venezuela + entorno</small>
+        <small id="statScope">Venezuela</small>
       </article>
       <article>
         <span>Prioridad alta</span>
@@ -136,7 +135,7 @@
       <article>
         <span>Actualizado</span>
         <strong id="statTime">—</strong>
-        <small>hora de Venezuela</small>
+        <small>hora local del dispositivo</small>
       </article>
     </section>
 
@@ -174,7 +173,7 @@
         <div class="map-head">
           <div>
             <p class="eyebrow">VISTA TERRITORIAL</p>
-            <strong id="mapScopeTitle">Venezuela + entorno</strong>
+            <strong id="mapScopeTitle">Venezuela</strong>
           </div>
           <button id="recenterBtn" type="button">⌖ Recentrar</button>
         </div>
@@ -198,12 +197,12 @@
       </aside>
     </section>
 
-    <section class="impact-dashboard" id="impactDashboard" aria-label="Impacto potencial Venezuela">
+    <section class="impact-dashboard" id="impactDashboard" aria-label="Impacto potencial del país seleccionado">
       <div class="impact-dashboard-head">
         <div>
-          <p class="eyebrow">IMPACTO VENEZUELA</p>
+          <p class="eyebrow">IMPACTO · <span id="impactCountryLabel">Venezuela</span></p>
           <h3>¿Qué podría verse comprometido?</h3>
-          <p>Lectura preventiva calculada con severidad, ubicación/proximidad y tipo de señal. Es una ayuda para priorizar verificaciones, no una predicción de daño.</p>
+          <p>Lectura preventiva calculada con severidad, ubicación y tipo de señal. Es una ayuda para priorizar verificaciones, no una predicción de daño.</p>
         </div>
         <div class="impact-level-counters" aria-label="Resumen por impacto potencial">
           <span class="high"><b id="impactHigh">0</b> alto</span>
@@ -222,7 +221,7 @@
           </div>
         </div>
         <article class="impact-detail" id="impactDetail" aria-live="polite">
-          <div class="impact-empty"><strong>Selecciona una señal</strong><p>Toca una tarjeta del listado para ver su lectura de impacto potencial sobre Venezuela.</p></div>
+          <div class="impact-empty"><strong>Selecciona una señal</strong><p>Toca una tarjeta del listado para ver su lectura de impacto potencial en el país seleccionado.</p></div>
         </article>
       </div>
     </section>
