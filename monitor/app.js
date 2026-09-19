@@ -39,17 +39,45 @@ const FALLBACK_COUNTRIES=[
 ];
 let countries=[...FALLBACK_COUNTRIES];
 let activeCountryCode='VE';
+let activeCountryBounds=null;
+let serverCountryScoped=false;
 
 function stripMarks(v){return String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()}
 function countryByCode(code=activeCountryCode){return countries.find(c=>c.code===code)||FALLBACK_COUNTRIES.find(c=>c.code===code)||FALLBACK_COUNTRIES[0]}
 function countryName(){return countryByCode().name}
 function countryAliases(c=countryByCode()){return [...new Set([c.name,c.english,...(c.aliases||[])].filter(Boolean))]}
+function parseCountryBounds(value){
+  if(!value)return null;
+  if(typeof value==='object'&&['west','south','east','north'].every(k=>Number.isFinite(Number(value[k]))))return{west:Number(value.west),south:Number(value.south),east:Number(value.east),north:Number(value.north)};
+  const p=String(value).split(',').map(Number);
+  return p.length===4&&p.every(Number.isFinite)?{west:p[0],south:p[1],east:p[2],north:p[3]}:null;
+}
+function pointInCountryBounds(lat,lon){
+  const b=activeCountryBounds,la=Number(lat),lo=Number(lon);
+  return !!b&&Number.isFinite(la)&&Number.isFinite(lo)&&la>=b.south&&la<=b.north&&lo>=b.west&&lo<=b.east;
+}
 function countryMatches(x){
   const c=countryByCode();
   const rawCode=text(first(x.countryCode,x.raw?.countryCode,x.raw?.country_code,x.raw?.iso2,x.raw?.iso_code,x.raw?.cca2)).toUpperCase();
   if(rawCode===c.code)return true;
   const hay=stripMarks([x.country,x.title,x.desc].join(' '));
-  return countryAliases(c).some(a=>hay.includes(stripMarks(a)));
+  if(countryAliases(c).some(a=>hay.includes(stripMarks(a))))return true;
+  return pointInCountryBounds(x.lat,x.lon);
+}
+function applyCountryContext(payload){
+  const ctx=payload?.country_context;
+  serverCountryScoped=!!payload?.country_scoped;
+  if(!ctx)return;
+  activeCountryBounds=parseCountryBounds(ctx.bounds||ctx.bbox)||activeCountryBounds;
+  const c=countryByCode();
+  if(Number.isFinite(Number(ctx.lat)))c.lat=Number(ctx.lat);
+  if(Number.isFinite(Number(ctx.lon)))c.lon=Number(ctx.lon);
+  if(ctx.bbox)c.bbox=ctx.bbox;
+}
+function focusCountry({animate=true}={}){
+  const c=countryByCode();
+  const lat=Number(c.lat),lon=Number(c.lon);
+  if(Number.isFinite(lat)&&Number.isFinite(lon))map.setView([lat,lon],Number(c.zoom)||5,{animate});
 }
 function updateCountryUi(){
   const c=countryByCode();
@@ -63,6 +91,7 @@ function populateCountrySelect(){
   select.value=activeCountryCode;
 }
 async function loadCountries(){
+  activeCountryBounds=parseCountryBounds(countryByCode().bbox);
   populateCountrySelect();updateCountryUi();
   try{
     const r=await fetch('https://restcountries.com/v3.1/all?fields=cca2,name,translations,latlng,area',{headers:{Accept:'application/json'}});
@@ -177,7 +206,7 @@ function normalize(o,i){
   };
 }
 
-function inScope(x){return countryMatches(x)}
+function inScope(x){return serverCountryScoped?true:countryMatches(x)}
 
 function eventKind(x){
   const s=[x.title,x.desc].join(' ').toLowerCase();
@@ -400,7 +429,7 @@ function render(){
   markers=[];
 
   if(!items.length){
-    list.innerHTML=`<div class="empty"><span>◎</span><strong>Sin señales para ${esc(countryName())}.</strong><p>No hay resultados que coincidan con el país y los filtros actuales. Prueba otra capa o selecciona otro país.</p></div>`;
+    list.innerHTML=`<div class="empty"><span>✓</span><strong>Consulta completada para ${esc(countryName())}.</strong><p>No hay señales activas en esta capa con las fuentes disponibles ahora. Esto no significa que exista una emergencia ni que la conexión haya fallado. Prueba otra capa para ver exposición, conectividad o radiación.</p></div>`;
     return;
   }
 
@@ -468,7 +497,7 @@ function recenter(){
   const points=filtered().filter(x=>x.lat!==null&&x.lon!==null).map(x=>[x.lat,x.lon]);
   if(points.length>1){map.fitBounds(points,{padding:[28,28],maxZoom:7,animate:true});return}
   if(points.length===1){map.setView(points[0],7,{animate:true});return}
-  const c=countryByCode();map.setView([Number(c.lat)||18,Number(c.lon)||0],Number(c.zoom)||5,{animate:true});
+  focusCountry();
 }
 
 function updateProvider(payload){
@@ -487,6 +516,8 @@ async function loadFeed(feed=activeFeed){
   activeFeed=feed;
   selectedImpactId='';
   $('#panelTitle').textContent=`${feedMeta[feed].title} · ${countryName()}`;
+  $('#mapScopeTitle').textContent=countryName();
+  $('#statScope').textContent=countryName();
   $('#feedList').innerHTML='<div class="empty loading"><span></span><strong>Consultando señales…</strong></div>';
   $('#livePill').classList.remove('online');
   $('#livePill b').textContent='Actualizando';
@@ -505,6 +536,7 @@ async function loadFeed(feed=activeFeed){
       throw err;
     }
     updateProvider(payload);
+    applyCountryContext(payload);
     rawItems=pickArray(payload.data??payload).map(normalize);
     $('#statTime').textContent=new Date().toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
     $('#livePill').classList.add('online');
@@ -512,7 +544,10 @@ async function loadFeed(feed=activeFeed){
     render();
     recenter();
     const visible=filtered().length;
-    if(!visible)toast(`Sin señales visibles para ${countryName()} en esta capa`);
+    if(!visible){
+      $('#providerMode').textContent=`Consulta completada · sin señales activas de ${feedMeta[feed].title.toLowerCase()} para ${countryName()}`;
+      toast(`Consulta completada: no hay señales activas para ${countryName()} en esta capa`);
+    }
   }catch(e){
     rawItems=[];
     markerLayer.clearLayers();
@@ -523,6 +558,7 @@ async function loadFeed(feed=activeFeed){
     $('#livePill b').textContent='Sin conexión';
     $('#providerMode').textContent='Fuente temporalmente no disponible';
     renderImpactDashboard([]);
+    focusCountry();
     toast('No se pudo actualizar esta capa');
     console.error(e);
   }
@@ -536,8 +572,15 @@ $$('.feed-tab').forEach(btn=>btn.addEventListener('click',()=>{
 
 $('#countryFilter').addEventListener('change',()=>{
   activeCountryCode=$('#countryFilter').value||'VE';
+  activeCountryBounds=parseCountryBounds(countryByCode().bbox);
+  serverCountryScoped=false;
   selectedImpactId='';
+  rawItems=[];
   updateCountryUi();
+  focusCountry();
+  markerLayer.clearLayers();
+  $('#resultCount').textContent='—';
+  $('#feedList').innerHTML=`<div class="empty loading"><span></span><strong>Consultando ${countryName()}…</strong><p>Buscando señales y contexto territorial del país seleccionado.</p></div>`;
   loadFeed(activeFeed);
 });
 
@@ -546,4 +589,4 @@ $('#severityFilter').addEventListener('change',()=>{selectedImpactId='';render()
 $('#refreshBtn').addEventListener('click',()=>loadFeed());
 $('#recenterBtn').addEventListener('click',recenter);
 
-loadCountries().finally(()=>loadFeed());
+loadCountries().finally(()=>{focusCountry({animate:false});loadFeed()});
