@@ -1,8 +1,8 @@
 {
-  "name": "Emergencias SST Venezuela · La Movida SST Plus",
+  "name": "Emergencias SST · La Movida SST Plus",
   "short_name": "Emergencias SST",
   "description": "Monitoreo situacional y aplicación para construir el Plan de Emergencias.",
-  "lang": "es-VE",
+  "lang": "es",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
